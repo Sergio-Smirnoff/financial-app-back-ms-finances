@@ -1,0 +1,30 @@
+# Build stage
+# Build context must be ./back (set in docker-compose.yml)
+FROM eclipse-temurin:25-jdk AS build
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
+
+# Install parent POM to local Maven repository
+COPY financial-app-parent/pom.xml financial-app-parent/pom.xml
+RUN mvn -f financial-app-parent/pom.xml install -N -q
+
+# Resolve dependencies (cached layer — only re-runs when pom.xml changes)
+COPY ms-finances/pom.xml ms-finances/pom.xml
+RUN mvn -f ms-finances/pom.xml dependency:go-offline -q
+
+# Build
+COPY ms-finances/src ms-finances/src
+RUN mvn -f ms-finances/pom.xml clean package -DskipTests -q
+
+# Runtime stage
+FROM eclipse-temurin:25-jre
+
+WORKDIR /app
+
+COPY --from=build /build/ms-finances/target/*.jar app.jar
+
+EXPOSE 8082
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
