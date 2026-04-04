@@ -3,28 +3,33 @@ server:
 
 spring:
   application:
-    name: ms-finances
+    name: finances-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/financialapp?currentSchema=finances}
+    username: ${DB_USERNAME:financialapp}
+    password: ${DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         default_schema: finances
-    show-sql: false
   flyway:
     schemas: finances
+    default-schema: finances
     locations: classpath:db/migration
-    baseline-on-migrate: true
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+alerts:
+  days-before-payment: ${DAYS_BEFORE_PAYMENT_ALERT:3}
+  days-before-loan: ${DAYS_BEFORE_LOAN_ALERT:3}
+  days-before-installment: ${DAYS_BEFORE_INSTALLMENT_ALERT:3}
 
 springdoc:
   api-docs:

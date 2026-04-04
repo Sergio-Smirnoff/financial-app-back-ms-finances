@@ -1,6 +1,6 @@
 # Build stage
 # Build context must be ./back (set in docker-compose.yml)
-FROM eclipse-temurin:25-jdk AS build
+FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /build
 
@@ -19,7 +19,7 @@ COPY ms-finances/src ms-finances/src
 RUN mvn -f ms-finances/pom.xml clean package -DskipTests -q
 
 # Runtime stage
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
