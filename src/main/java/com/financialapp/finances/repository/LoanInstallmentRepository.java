@@ -43,8 +43,8 @@ public interface LoanInstallmentRepository extends JpaRepository<LoanInstallment
     @Query("SELECT COALESCE(SUM(li.amount), 0) FROM LoanInstallment li " +
            "JOIN li.loan l " +
            "WHERE l.userId = :userId AND l.currency = :currency " +
-           "AND li.dueDate BETWEEN :from AND :to AND li.paid = true")
-    BigDecimal sumPaidByUserAndCurrencyAndDueDateRange(
+           "AND li.paidDate BETWEEN :from AND :to AND li.paid = true")
+    BigDecimal sumPaidByUserAndCurrencyAndPaidDateRange(
             @Param("userId") Long userId,
             @Param("currency") String currency,
             @Param("from") LocalDate from,

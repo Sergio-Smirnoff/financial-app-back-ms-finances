@@ -110,9 +110,9 @@ public class TransactionService {
         BigDecimal transactionExpense = transactionRepository
                 .sumByTypeAndCurrency(userId, TransactionType.EXPENSE, currency, dateFrom, dateTo);
         BigDecimal paidLoanInstallments = loanInstallmentRepository
-                .sumPaidByUserAndCurrencyAndDueDateRange(userId, currency, dateFrom, dateTo);
+                .sumPaidByUserAndCurrencyAndPaidDateRange(userId, currency, dateFrom, dateTo);
         BigDecimal paidCardInstallments = cardExpenseInstallmentRepository
-                .sumPaidByUserAndCurrencyAndDueDateRange(userId, currency, dateFrom, dateTo);
+                .sumPaidByUserAndCurrencyAndPaidDateRange(userId, currency, dateFrom, dateTo);
         BigDecimal totalExpense = transactionExpense.add(paidLoanInstallments).add(paidCardInstallments);
         BigDecimal balance = totalIncome.subtract(totalExpense);
         int activeLoans = loanRepository.countActiveByUserIdAndCurrency(userId, currency);

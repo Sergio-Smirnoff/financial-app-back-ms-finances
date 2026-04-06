@@ -34,8 +34,8 @@ public interface CardExpenseInstallmentRepository extends JpaRepository<CardExpe
     @Query("SELECT COALESCE(SUM(cei.amount), 0) FROM CardExpenseInstallment cei " +
            "JOIN cei.cardExpense ce " +
            "WHERE ce.userId = :userId AND ce.currency = :currency " +
-           "AND cei.dueDate BETWEEN :from AND :to AND cei.paid = true")
-    BigDecimal sumPaidByUserAndCurrencyAndDueDateRange(
+           "AND cei.paidDate BETWEEN :from AND :to AND cei.paid = true")
+    BigDecimal sumPaidByUserAndCurrencyAndPaidDateRange(
             @Param("userId") Long userId,
             @Param("currency") String currency,
             @Param("from") LocalDate from,
