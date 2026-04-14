@@ -1,6 +1,8 @@
 package com.financialapp.finances.repository;
 
 import com.financialapp.finances.model.entity.CardExpense;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,11 +20,12 @@ public interface CardExpenseRepository extends JpaRepository<CardExpense, Long> 
            "AND (:cardId IS NULL OR ce.cardId = :cardId) " +
            "AND (:currency IS NULL OR ce.currency = :currency) " +
            "ORDER BY ce.createdAt DESC")
-    List<CardExpense> findFiltered(
+    Page<CardExpense> findFiltered(
             @Param("userId") Long userId,
             @Param("active") Boolean active,
             @Param("cardId") Long cardId,
-            @Param("currency") String currency);
+            @Param("currency") String currency,
+            Pageable pageable);
 
     @Query("SELECT ce FROM CardExpense ce " +
            "WHERE ce.active = true AND ce.nextDueDate BETWEEN :from AND :to")

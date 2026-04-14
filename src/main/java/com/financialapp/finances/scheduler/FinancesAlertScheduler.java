@@ -66,15 +66,7 @@ public class FinancesAlertScheduler {
         LocalDate today = LocalDate.now();
         LocalDate limit = today.plusDays(alertProperties.getDaysBeforeLoan());
 
-        // Find all active loans (we check next_payment_date)
-        List<Loan> loansWithUpcomingPayment = loanRepository
-                .findAll()
-                .stream()
-                .filter(l -> l.isActive()
-                        && l.getNextPaymentDate() != null
-                        && !l.getNextPaymentDate().isBefore(today)
-                        && !l.getNextPaymentDate().isAfter(limit))
-                .toList();
+        List<Loan> loansWithUpcomingPayment = loanRepository.findActiveWithUpcomingPayment(today, limit);
 
         log.info("loan.reminder scheduler — found {} loan(s) with payment due within {} days",
                 loansWithUpcomingPayment.size(), alertProperties.getDaysBeforeLoan());

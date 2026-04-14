@@ -2,6 +2,7 @@ package com.financialapp.finances.controller;
 
 import com.financialapp.finances.model.dto.request.TransactionRequest;
 import com.financialapp.finances.model.dto.response.ApiResponse;
+import com.financialapp.finances.model.dto.response.CategorySummaryResponse;
 import com.financialapp.finances.model.dto.response.SummaryResponse;
 import com.financialapp.finances.model.dto.response.TransactionResponse;
 import com.financialapp.finances.model.enums.TransactionType;
@@ -90,5 +91,17 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
         return ResponseEntity.ok(ApiResponse.ok(transactionService.getSummary(userId, currency, dateFrom, dateTo)));
+    }
+
+    @GetMapping("/summary-by-category")
+    @Operation(summary = "Transaction summary grouped by category",
+               description = "Returns expenses and income grouped by category with totals")
+    public ResponseEntity<ApiResponse<List<CategorySummaryResponse>>> getSummaryByCategory(
+            @RequestHeader("X-User-Id") Long userId,
+            @Parameter(description = "ISO date yyyy-MM-dd")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @Parameter(description = "ISO date yyyy-MM-dd")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
+        return ResponseEntity.ok(ApiResponse.ok(transactionService.getSummaryByCategory(userId, dateFrom, dateTo)));
     }
 }

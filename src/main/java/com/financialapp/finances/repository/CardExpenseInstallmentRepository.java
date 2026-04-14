@@ -31,6 +31,10 @@ public interface CardExpenseInstallmentRepository extends JpaRepository<CardExpe
             @Param("to") LocalDate to,
             @Param("currency") String currency);
 
+    @Query("SELECT COUNT(cei) FROM CardExpenseInstallment cei WHERE cei.cardExpense.id = :cardExpenseId " +
+           "AND cei.installmentNumber < :installmentNumber AND cei.paid = false")
+    int countUnpaidBefore(@Param("cardExpenseId") Long cardExpenseId, @Param("installmentNumber") int installmentNumber);
+
     @Query("SELECT COALESCE(SUM(cei.amount), 0) FROM CardExpenseInstallment cei " +
            "JOIN cei.cardExpense ce " +
            "WHERE ce.userId = :userId AND ce.currency = :currency " +

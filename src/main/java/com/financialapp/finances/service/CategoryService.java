@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,10 +33,18 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public List<CategoryTreeResponse> getCategoryTree(Long userId, CategoryType type, Boolean isSystem) {
         List<Category> parents = categoryRepository.findVisibleParentCategories(userId, type, isSystem);
+        if (parents.isEmpty()) {
+            return List.of();
+        }
+        List<Long> parentIds = parents.stream().map(Category::getId).toList();
+        Map<Long, List<Category>> subsByParent = categoryRepository
+                .findVisibleSubcategoriesForParents(parentIds, userId)
+                .stream()
+                .collect(Collectors.groupingBy(sub -> sub.getParent().getId()));
         return parents.stream()
                 .map(parent -> {
                     CategoryTreeResponse response = categoryMapper.toCategoryTreeResponse(parent);
-                    List<Category> subs = categoryRepository.findVisibleSubcategories(parent.getId(), userId);
+                    List<Category> subs = subsByParent.getOrDefault(parent.getId(), List.of());
                     List<SubcategoryResponse> subResponses = categoryMapper.toSubcategoryResponseList(subs);
                     return CategoryTreeResponse.builder()
                             .id(response.getId())

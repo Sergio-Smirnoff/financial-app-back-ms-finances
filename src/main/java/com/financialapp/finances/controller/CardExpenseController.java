@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,13 +30,15 @@ public class CardExpenseController {
     private final CardExpenseInstallmentService installmentService;
 
     @GetMapping
-    @Operation(summary = "List card expenses", description = "Filters: active, cardId, currency")
-    public ResponseEntity<ApiResponse<List<CardExpenseResponse>>> getCardExpenses(
+    @Operation(summary = "List card expenses", description = "Filters: active, cardId, currency. Supports pagination.")
+    public ResponseEntity<ApiResponse<Page<CardExpenseResponse>>> getCardExpenses(
             @RequestHeader("X-User-Id") Long userId,
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Long cardId,
-            @RequestParam(required = false) String currency) {
-        return ResponseEntity.ok(ApiResponse.ok(cardExpenseService.getCardExpenses(userId, active, cardId, currency)));
+            @RequestParam(required = false) String currency,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                cardExpenseService.getCardExpenses(userId, active, cardId, currency, pageable)));
     }
 
     @PostMapping

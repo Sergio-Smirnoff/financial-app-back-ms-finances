@@ -40,6 +40,10 @@ public interface LoanInstallmentRepository extends JpaRepository<LoanInstallment
             @Param("to") LocalDate to,
             @Param("currency") String currency);
 
+    @Query("SELECT COUNT(li) FROM LoanInstallment li WHERE li.loan.id = :loanId " +
+           "AND li.installmentNumber < :installmentNumber AND li.paid = false")
+    int countUnpaidBefore(@Param("loanId") Long loanId, @Param("installmentNumber") int installmentNumber);
+
     @Query("SELECT COALESCE(SUM(li.amount), 0) FROM LoanInstallment li " +
            "JOIN li.loan l " +
            "WHERE l.userId = :userId AND l.currency = :currency " +

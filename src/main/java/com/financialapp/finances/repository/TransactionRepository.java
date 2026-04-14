@@ -1,9 +1,11 @@
 package com.financialapp.finances.repository;
 
+import com.financialapp.finances.model.dto.response.CategorySummaryResponse;
 import com.financialapp.finances.model.entity.Transaction;
 import com.financialapp.finances.model.enums.TransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,10 +13,12 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
+    @EntityGraph(attributePaths = {"category"})
     @Query("SELECT t FROM Transaction t WHERE t.userId = :userId " +
            "AND (:type IS NULL OR t.type = :type) " +
            "AND (:categoryId IS NULL OR t.category.id = :categoryId) " +
@@ -38,6 +42,21 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             @Param("userId") Long userId,
             @Param("type") TransactionType type,
             @Param("currency") String currency,
+            @Param("dateFrom") LocalDate dateFrom,
+            @Param("dateTo") LocalDate dateTo);
+
+    @Query("SELECT new com.financialapp.finances.model.dto.response.CategorySummaryResponse(" +
+           "COALESCE(p.name, c.name), c.name, SUM(t.amount), t.currency, COUNT(t)) " +
+           "FROM Transaction t " +
+           "JOIN t.category c " +
+           "LEFT JOIN c.parent p " +
+           "WHERE t.userId = :userId " +
+           "AND (CAST(:dateFrom AS date) IS NULL OR t.date >= :dateFrom) " +
+           "AND (CAST(:dateTo AS date) IS NULL OR t.date <= :dateTo) " +
+           "GROUP BY COALESCE(p.name, c.name), c.name, t.currency " +
+           "ORDER BY SUM(t.amount) DESC")
+    List<CategorySummaryResponse> findSummaryByCategory(
+            @Param("userId") Long userId,
             @Param("dateFrom") LocalDate dateFrom,
             @Param("dateTo") LocalDate dateTo);
 }

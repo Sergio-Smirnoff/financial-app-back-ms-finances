@@ -67,14 +67,10 @@ public class CardExpenseInstallmentService {
         }
 
         // Validate no previous unpaid installments
-        List<CardExpenseInstallment> allInstallments = installmentRepository
-                .findByCardExpenseIdOrderByInstallmentNumberAsc(cardExpenseId);
-        for (CardExpenseInstallment previous : allInstallments) {
-            if (previous.getInstallmentNumber() < installment.getInstallmentNumber() && !previous.isPaid()) {
-                throw new BusinessException(
-                        "Cannot pay installment #" + installment.getInstallmentNumber() +
-                        " — installment #" + previous.getInstallmentNumber() + " is still unpaid");
-            }
+        if (installmentRepository.countUnpaidBefore(cardExpenseId, installment.getInstallmentNumber()) > 0) {
+            throw new BusinessException(
+                    "Cannot pay installment #" + installment.getInstallmentNumber() +
+                    " — a previous installment is still unpaid");
         }
 
         installment.setPaid(true);

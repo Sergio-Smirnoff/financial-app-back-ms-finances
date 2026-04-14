@@ -11,6 +11,8 @@ import com.financialapp.finances.repository.CardExpenseInstallmentRepository;
 import com.financialapp.finances.repository.CardExpenseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +30,10 @@ public class CardExpenseService {
     private final CardExpenseMapper cardExpenseMapper;
 
     @Transactional(readOnly = true)
-    public List<CardExpenseResponse> getCardExpenses(Long userId, Boolean active, Long cardId, String currency) {
-        return cardExpenseRepository.findFiltered(userId, active, cardId, currency)
-                .stream()
-                .map(cardExpenseMapper::toResponse)
-                .toList();
+    public Page<CardExpenseResponse> getCardExpenses(Long userId, Boolean active, Long cardId, String currency,
+                                                     Pageable pageable) {
+        return cardExpenseRepository.findFiltered(userId, active, cardId, currency, pageable)
+                .map(cardExpenseMapper::toResponse);
     }
 
     @Transactional

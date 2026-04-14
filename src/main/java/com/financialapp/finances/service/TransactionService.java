@@ -3,6 +3,7 @@ package com.financialapp.finances.service;
 import com.financialapp.finances.exception.ResourceNotFoundException;
 import com.financialapp.finances.mapper.TransactionMapper;
 import com.financialapp.finances.model.dto.request.TransactionRequest;
+import com.financialapp.finances.model.dto.response.CategorySummaryResponse;
 import com.financialapp.finances.model.dto.response.SummaryResponse;
 import com.financialapp.finances.model.dto.response.TransactionResponse;
 import com.financialapp.finances.model.entity.Category;
@@ -64,8 +65,7 @@ public class TransactionService {
                 .build();
         Transaction saved = transactionRepository.save(transaction);
         log.info("Created transaction id={} for userId={}", saved.getId(), userId);
-        return transactionMapper.toResponse(transactionRepository.findById(saved.getId())
-                .orElseThrow());
+        return transactionMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -102,6 +102,11 @@ public class TransactionService {
         return currencies.stream()
                 .map(cur -> buildSummary(userId, cur, dateFrom, dateTo))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategorySummaryResponse> getSummaryByCategory(Long userId, LocalDate dateFrom, LocalDate dateTo) {
+        return transactionRepository.findSummaryByCategory(userId, dateFrom, dateTo);
     }
 
     private SummaryResponse buildSummary(Long userId, String currency, LocalDate dateFrom, LocalDate dateTo) {

@@ -1,12 +1,15 @@
 package com.financialapp.finances.repository;
 
 import com.financialapp.finances.model.entity.Loan;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -16,10 +19,16 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
            "AND (:active IS NULL OR l.active = :active) " +
            "AND (:currency IS NULL OR l.currency = :currency) " +
            "ORDER BY l.createdAt DESC")
-    List<Loan> findFiltered(
+    Page<Loan> findFiltered(
             @Param("userId") Long userId,
             @Param("active") Boolean active,
-            @Param("currency") String currency);
+            @Param("currency") String currency,
+            Pageable pageable);
+
+    @Query("SELECT l FROM Loan l WHERE l.active = true " +
+           "AND l.nextPaymentDate IS NOT NULL " +
+           "AND l.nextPaymentDate BETWEEN :from AND :to")
+    List<Loan> findActiveWithUpcomingPayment(@Param("from") LocalDate from, @Param("to") LocalDate to);
 
     @Query("SELECT COUNT(l) FROM Loan l WHERE l.userId = :userId AND l.active = true AND l.currency = :currency")
     int countActiveByUserIdAndCurrency(@Param("userId") Long userId, @Param("currency") String currency);

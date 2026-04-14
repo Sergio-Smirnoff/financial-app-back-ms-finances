@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,12 +30,13 @@ public class LoanController {
     private final LoanInstallmentService loanInstallmentService;
 
     @GetMapping
-    @Operation(summary = "List loans", description = "Filters: active, currency")
-    public ResponseEntity<ApiResponse<List<LoanResponse>>> getLoans(
+    @Operation(summary = "List loans", description = "Filters: active, currency. Supports pagination.")
+    public ResponseEntity<ApiResponse<Page<LoanResponse>>> getLoans(
             @RequestHeader("X-User-Id") Long userId,
             @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) String currency) {
-        return ResponseEntity.ok(ApiResponse.ok(loanService.getLoans(userId, active, currency)));
+            @RequestParam(required = false) String currency,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(ApiResponse.ok(loanService.getLoans(userId, active, currency, pageable)));
     }
 
     @PostMapping

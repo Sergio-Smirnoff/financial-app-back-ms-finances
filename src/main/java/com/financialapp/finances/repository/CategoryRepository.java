@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -27,6 +28,13 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
            "ORDER BY c.system DESC, c.name ASC")
     List<Category> findVisibleSubcategories(
             @Param("parentId") Long parentId,
+            @Param("userId") Long userId);
+
+    @Query("SELECT c FROM Category c WHERE c.parent.id IN :parentIds AND c.active = true " +
+           "AND (c.system = true OR c.userId = :userId) " +
+           "ORDER BY c.system DESC, c.name ASC")
+    List<Category> findVisibleSubcategoriesForParents(
+            @Param("parentIds") Collection<Long> parentIds,
             @Param("userId") Long userId);
 
     @Query("SELECT c FROM Category c WHERE c.active = true " +

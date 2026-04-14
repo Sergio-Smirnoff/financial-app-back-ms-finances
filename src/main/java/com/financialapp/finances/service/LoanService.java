@@ -12,6 +12,8 @@ import com.financialapp.finances.repository.LoanInstallmentRepository;
 import com.financialapp.finances.repository.LoanRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +31,9 @@ public class LoanService {
     private final LoanMapper loanMapper;
 
     @Transactional(readOnly = true)
-    public List<LoanResponse> getLoans(Long userId, Boolean active, String currency) {
-        return loanRepository.findFiltered(userId, active, currency)
-                .stream()
-                .map(loanMapper::toResponse)
-                .toList();
+    public Page<LoanResponse> getLoans(Long userId, Boolean active, String currency, Pageable pageable) {
+        return loanRepository.findFiltered(userId, active, currency, pageable)
+                .map(loanMapper::toResponse);
     }
 
     @Transactional
