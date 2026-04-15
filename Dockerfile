@@ -12,7 +12,7 @@ RUN mvn -f financial-app-parent/pom.xml install -N -q
 
 # Resolve dependencies (cached layer — only re-runs when pom.xml changes)
 COPY ms-finances/pom.xml ms-finances/pom.xml
-RUN mvn -f ms-finances/pom.xml dependency:go-offline -q
+RUN mvn -f ms-finances/pom.xml dependency:resolve -q
 
 # Build
 COPY ms-finances/src ms-finances/src
