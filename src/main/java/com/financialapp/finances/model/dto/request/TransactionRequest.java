@@ -21,6 +21,8 @@ public class TransactionRequest {
     @Positive(message = "Amount must be positive")
     private BigDecimal amount;
 
+    private Long accountId;
+
     @NotBlank(message = "Currency is required")
     @Pattern(regexp = "ARS|USD", message = "Currency must be ARS or USD")
     private String currency;

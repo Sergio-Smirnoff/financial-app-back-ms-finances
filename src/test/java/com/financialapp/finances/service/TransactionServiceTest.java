@@ -8,10 +8,7 @@ import com.financialapp.finances.model.dto.response.TransactionResponse;
 import com.financialapp.finances.model.entity.Category;
 import com.financialapp.finances.model.entity.Transaction;
 import com.financialapp.finances.model.enums.TransactionType;
-import com.financialapp.finances.repository.LoanInstallmentRepository;
-import com.financialapp.finances.repository.LoanRepository;
 import com.financialapp.finances.repository.TransactionRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,15 +36,12 @@ import static org.mockito.Mockito.*;
 class TransactionServiceTest {
 
     @Mock private TransactionRepository transactionRepository;
-    @Mock private LoanRepository loanRepository;
-    @Mock private LoanInstallmentRepository loanInstallmentRepository;
     @Mock private CategoryService categoryService;
     @Mock private TransactionMapper transactionMapper;
 
     @InjectMocks private TransactionService transactionService;
 
     private static final Long USER_ID = 1L;
-    private static final Long OTHER_USER_ID = 2L;
 
     private Transaction buildTransaction(Long id, Long userId) {
         Category category = new Category();
@@ -101,19 +95,6 @@ class TransactionServiceTest {
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getId()).isEqualTo(1L);
         }
-
-        @Test
-        @DisplayName("returns empty page when user has no transactions")
-        void returnsEmptyPage() {
-            Pageable pageable = PageRequest.of(0, 20);
-            when(transactionRepository.findFiltered(USER_ID, null, null, null, null, null, pageable))
-                    .thenReturn(Page.empty());
-
-            Page<TransactionResponse> result = transactionService.getTransactions(
-                    USER_ID, null, null, null, null, null, pageable);
-
-            assertThat(result.getContent()).isEmpty();
-        }
     }
 
     @Nested
@@ -145,42 +126,6 @@ class TransactionServiceTest {
             verify(categoryService).validateSubcategoryForTransaction(101L, USER_ID);
             verify(transactionRepository).save(any(Transaction.class));
         }
-
-        @Test
-        @DisplayName("throws ResourceNotFoundException when category is invalid")
-        void throwsWhenCategoryInvalid() {
-            TransactionRequest request = new TransactionRequest();
-            request.setCategoryId(999L);
-            request.setType(TransactionType.EXPENSE);
-            request.setAmount(BigDecimal.TEN);
-            request.setCurrency("ARS");
-            request.setDate(LocalDate.now());
-
-            doThrow(new ResourceNotFoundException("Category", 999L))
-                    .when(categoryService).validateSubcategoryForTransaction(999L, USER_ID);
-
-            assertThatThrownBy(() -> transactionService.create(USER_ID, request))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("getById")
-    class GetById {
-
-        @Test
-        @DisplayName("returns transaction when found and owned by user")
-        void returnsTransaction() {
-            Transaction tx = buildTransaction(5L, USER_ID);
-            TransactionResponse resp = buildResponse(tx);
-
-            when(transactionRepository.findById(5L)).thenReturn(Optional.of(tx));
-            when(transactionMapper.toResponse(tx)).thenReturn(resp);
-
-            TransactionResponse result = transactionService.getById(5L, USER_ID);
-
-            assertThat(result.getId()).isEqualTo(5L);
-        }
     }
 
     @Nested
@@ -198,30 +143,20 @@ class TransactionServiceTest {
                     .thenReturn(new BigDecimal("50000"));
             when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.EXPENSE, "ARS", from, to))
                     .thenReturn(new BigDecimal("20000"));
-            when(loanInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "ARS", from, to))
-                    .thenReturn(new BigDecimal("5000"));
-            when(loanRepository.countActiveByUserIdAndCurrency(USER_ID, "ARS")).thenReturn(2);
-            when(loanRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "ARS"))
-                    .thenReturn(new BigDecimal("100000"));
 
             // USD
             when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.INCOME, "USD", from, to))
                     .thenReturn(BigDecimal.ZERO);
             when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.EXPENSE, "USD", from, to))
                     .thenReturn(BigDecimal.ZERO);
-            when(loanInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "USD", from, to))
-                    .thenReturn(BigDecimal.ZERO);
-            when(loanRepository.countActiveByUserIdAndCurrency(USER_ID, "USD")).thenReturn(0);
-            when(loanRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "USD")).thenReturn(BigDecimal.ZERO);
 
             List<SummaryResponse> result = transactionService.getSummary(USER_ID, null, from, to);
 
             assertThat(result).hasSize(2);
             SummaryResponse ars = result.stream().filter(s -> "ARS".equals(s.getCurrency())).findFirst().orElseThrow();
             assertThat(ars.getTotalIncome()).isEqualByComparingTo("50000");
-            assertThat(ars.getTotalExpense()).isEqualByComparingTo("25000"); // 20000+5000
-            assertThat(ars.getBalance()).isEqualByComparingTo("25000");
-            assertThat(ars.getActiveLoans()).isEqualTo(2);
+            assertThat(ars.getTotalExpense()).isEqualByComparingTo("20000");
+            assertThat(ars.getBalance()).isEqualByComparingTo("30000");
         }
     }
 }

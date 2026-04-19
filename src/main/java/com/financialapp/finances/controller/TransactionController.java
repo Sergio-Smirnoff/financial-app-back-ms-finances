@@ -1,6 +1,7 @@
 package com.financialapp.finances.controller;
 
 import com.financialapp.finances.model.dto.request.TransactionRequest;
+import com.financialapp.finances.model.dto.request.TransferRequest;
 import com.financialapp.finances.model.dto.response.ApiResponse;
 import com.financialapp.finances.model.dto.response.CategorySummaryResponse;
 import com.financialapp.finances.model.dto.response.SummaryResponse;
@@ -54,6 +55,15 @@ public class TransactionController {
             @Valid @RequestBody TransactionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Transaction created", transactionService.create(userId, request)));
+    }
+
+    @PostMapping("/transfer")
+    @Operation(summary = "Create a transfer between accounts")
+    public ResponseEntity<ApiResponse<List<TransactionResponse>>> transfer(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody TransferRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Transfer created", transactionService.transfer(userId, request)));
     }
 
     @GetMapping("/{id}")

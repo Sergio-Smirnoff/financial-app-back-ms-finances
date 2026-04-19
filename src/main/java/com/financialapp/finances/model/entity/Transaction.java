@@ -7,6 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "transactions", schema = "finances")
@@ -23,6 +24,12 @@ public class Transaction {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @Column(name = "account_id")
+    private Long accountId;
+
+    @Column(name = "transfer_group_id")
+    private UUID transferGroupId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)

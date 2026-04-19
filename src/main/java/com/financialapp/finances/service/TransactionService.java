@@ -1,16 +1,17 @@
 package com.financialapp.finances.service;
 
+import com.financialapp.finances.client.BanksClient;
+import com.financialapp.finances.exception.BusinessException;
 import com.financialapp.finances.exception.ResourceNotFoundException;
 import com.financialapp.finances.mapper.TransactionMapper;
 import com.financialapp.finances.model.dto.request.TransactionRequest;
+import com.financialapp.finances.model.dto.request.TransferRequest;
 import com.financialapp.finances.model.dto.response.CategorySummaryResponse;
 import com.financialapp.finances.model.dto.response.SummaryResponse;
 import com.financialapp.finances.model.dto.response.TransactionResponse;
 import com.financialapp.finances.model.entity.Category;
 import com.financialapp.finances.model.entity.Transaction;
 import com.financialapp.finances.model.enums.TransactionType;
-import com.financialapp.finances.repository.LoanInstallmentRepository;
-import com.financialapp.finances.repository.LoanRepository;
 import com.financialapp.finances.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,10 +33,9 @@ public class TransactionService {
     private static final List<String> SUPPORTED_CURRENCIES = List.of("ARS", "USD");
 
     private final TransactionRepository transactionRepository;
-    private final LoanRepository loanRepository;
-    private final LoanInstallmentRepository loanInstallmentRepository;
     private final CategoryService categoryService;
     private final TransactionMapper transactionMapper;
+    private final BanksClient banksClient;
 
     @Transactional(readOnly = true)
     public Page<TransactionResponse> getTransactions(
@@ -56,12 +57,64 @@ public class TransactionService {
                 .amount(request.getAmount())
                 .currency(request.getCurrency())
                 .category(category)
+                .accountId(request.getAccountId())
                 .description(request.getDescription())
                 .date(request.getDate())
                 .build();
         Transaction saved = transactionRepository.save(transaction);
         log.info("Created transaction id={} for userId={}", saved.getId(), userId);
+        
+        if (request.getAccountId() != null) {
+            BigDecimal delta = request.getType() == TransactionType.INCOME ? 
+                    request.getAmount() : request.getAmount().negate();
+            banksClient.adjustBalance(request.getAccountId(), delta);
+        }
+        
         return transactionMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public List<TransactionResponse> transfer(Long userId, TransferRequest request) {
+        if (request.fromAccountId().equals(request.toAccountId())) {
+            throw new BusinessException("Cannot transfer to the same account");
+        }
+
+        UUID transferGroupId = UUID.randomUUID();
+
+        Transaction out = Transaction.builder()
+                .userId(userId)
+                .accountId(request.fromAccountId())
+                .type(TransactionType.EXPENSE)
+                .amount(request.amount())
+                .currency(request.currency())
+                .description(request.description() + " (Transfer Out)")
+                .date(request.date())
+                .transferGroupId(transferGroupId)
+                .build();
+
+        Transaction in = Transaction.builder()
+                .userId(userId)
+                .accountId(request.toAccountId())
+                .type(TransactionType.INCOME)
+                .amount(request.amount())
+                .currency(request.currency())
+                .description(request.description() + " (Transfer In)")
+                .date(request.date())
+                .transferGroupId(transferGroupId)
+                .build();
+
+        Category systemCategory = new Category();
+        systemCategory.setId(1101L); // Category: Otros -> Varios
+        out.setCategory(systemCategory);
+        in.setCategory(systemCategory);
+
+        transactionRepository.save(out);
+        transactionRepository.save(in);
+
+        banksClient.adjustBalance(request.fromAccountId(), request.amount().negate());
+        banksClient.adjustBalance(request.toAccountId(), request.amount());
+
+        return List.of(transactionMapper.toResponse(out), transactionMapper.toResponse(in));
     }
 
     @Transactional(readOnly = true)
@@ -105,26 +158,43 @@ public class TransactionService {
         return transactionRepository.findSummaryByCategory(userId, dateFrom, dateTo);
     }
 
+    @Transactional
+    public void recordPayment(com.financialapp.finances.kafka.event.PaymentEvent event) {
+        log.info("Recording payment for userId={} amount={}", event.userId(), event.amount());
+        
+        Category systemCategory = new Category();
+        systemCategory.setId(1101L); // Category: Otros -> Varios
+
+        Transaction transaction = Transaction.builder()
+                .userId(event.userId())
+                .accountId(event.accountId())
+                .type(TransactionType.EXPENSE)
+                .amount(event.amount())
+                .currency(event.currency())
+                .category(systemCategory)
+                .description(event.description() != null ? event.description() : "Automatic Payment Recording")
+                .date(event.date() != null ? event.date() : LocalDate.now())
+                .build();
+
+        transactionRepository.save(transaction);
+        log.info("Recorded payment as transaction id={}", transaction.getId());
+    }
+
     private SummaryResponse buildSummary(Long userId, String currency, LocalDate dateFrom, LocalDate dateTo) {
         BigDecimal totalIncome = transactionRepository
                 .sumByTypeAndCurrency(userId, TransactionType.INCOME, currency, dateFrom, dateTo);
-        BigDecimal transactionExpense = transactionRepository
+        BigDecimal totalExpense = transactionRepository
                 .sumByTypeAndCurrency(userId, TransactionType.EXPENSE, currency, dateFrom, dateTo);
-        BigDecimal paidLoanInstallments = loanInstallmentRepository
-                .sumPaidByUserAndCurrencyAndPaidDateRange(userId, currency, dateFrom, dateTo);
         
-        BigDecimal totalExpense = transactionExpense.add(paidLoanInstallments);
         BigDecimal balance = totalIncome.subtract(totalExpense);
-        int activeLoans = loanRepository.countActiveByUserIdAndCurrency(userId, currency);
-        BigDecimal totalLoanDebt = loanRepository.sumRemainingDebtByUserIdAndCurrency(userId, currency);
         
         return SummaryResponse.builder()
                 .currency(currency)
                 .totalIncome(totalIncome)
                 .totalExpense(totalExpense)
                 .balance(balance)
-                .activeLoans(activeLoans)
-                .totalLoanDebt(totalLoanDebt)
+                .activeLoans(0)
+                .totalLoanDebt(BigDecimal.ZERO)
                 .activeCardExpenses(0)
                 .totalCardExpenseDebt(BigDecimal.ZERO)
                 .build();
