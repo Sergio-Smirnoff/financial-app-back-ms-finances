@@ -9,8 +9,6 @@ import com.financialapp.finances.model.dto.response.TransactionResponse;
 import com.financialapp.finances.model.entity.Category;
 import com.financialapp.finances.model.entity.Transaction;
 import com.financialapp.finances.model.enums.TransactionType;
-import com.financialapp.finances.repository.CardExpenseInstallmentRepository;
-import com.financialapp.finances.repository.CardExpenseRepository;
 import com.financialapp.finances.repository.LoanInstallmentRepository;
 import com.financialapp.finances.repository.LoanRepository;
 import com.financialapp.finances.repository.TransactionRepository;
@@ -35,8 +33,6 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final LoanRepository loanRepository;
     private final LoanInstallmentRepository loanInstallmentRepository;
-    private final CardExpenseRepository cardExpenseRepository;
-    private final CardExpenseInstallmentRepository cardExpenseInstallmentRepository;
     private final CategoryService categoryService;
     private final TransactionMapper transactionMapper;
 
@@ -116,14 +112,12 @@ public class TransactionService {
                 .sumByTypeAndCurrency(userId, TransactionType.EXPENSE, currency, dateFrom, dateTo);
         BigDecimal paidLoanInstallments = loanInstallmentRepository
                 .sumPaidByUserAndCurrencyAndPaidDateRange(userId, currency, dateFrom, dateTo);
-        BigDecimal paidCardInstallments = cardExpenseInstallmentRepository
-                .sumPaidByUserAndCurrencyAndPaidDateRange(userId, currency, dateFrom, dateTo);
-        BigDecimal totalExpense = transactionExpense.add(paidLoanInstallments).add(paidCardInstallments);
+        
+        BigDecimal totalExpense = transactionExpense.add(paidLoanInstallments);
         BigDecimal balance = totalIncome.subtract(totalExpense);
         int activeLoans = loanRepository.countActiveByUserIdAndCurrency(userId, currency);
         BigDecimal totalLoanDebt = loanRepository.sumRemainingDebtByUserIdAndCurrency(userId, currency);
-        int activeCardExpenses = cardExpenseRepository.countActiveByUserIdAndCurrency(userId, currency);
-        BigDecimal totalCardExpenseDebt = cardExpenseRepository.sumRemainingDebtByUserIdAndCurrency(userId, currency);
+        
         return SummaryResponse.builder()
                 .currency(currency)
                 .totalIncome(totalIncome)
@@ -131,8 +125,8 @@ public class TransactionService {
                 .balance(balance)
                 .activeLoans(activeLoans)
                 .totalLoanDebt(totalLoanDebt)
-                .activeCardExpenses(activeCardExpenses)
-                .totalCardExpenseDebt(totalCardExpenseDebt)
+                .activeCardExpenses(0)
+                .totalCardExpenseDebt(BigDecimal.ZERO)
                 .build();
     }
 

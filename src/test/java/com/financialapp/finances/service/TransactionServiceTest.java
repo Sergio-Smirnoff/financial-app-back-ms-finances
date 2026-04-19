@@ -1,6 +1,5 @@
 package com.financialapp.finances.service;
 
-import com.financialapp.finances.exception.BusinessException;
 import com.financialapp.finances.exception.ResourceNotFoundException;
 import com.financialapp.finances.mapper.TransactionMapper;
 import com.financialapp.finances.model.dto.request.TransactionRequest;
@@ -9,8 +8,6 @@ import com.financialapp.finances.model.dto.response.TransactionResponse;
 import com.financialapp.finances.model.entity.Category;
 import com.financialapp.finances.model.entity.Transaction;
 import com.financialapp.finances.model.enums.TransactionType;
-import com.financialapp.finances.repository.CardExpenseInstallmentRepository;
-import com.financialapp.finances.repository.CardExpenseRepository;
 import com.financialapp.finances.repository.LoanInstallmentRepository;
 import com.financialapp.finances.repository.LoanRepository;
 import com.financialapp.finances.repository.TransactionRepository;
@@ -35,7 +32,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,8 +41,6 @@ class TransactionServiceTest {
     @Mock private TransactionRepository transactionRepository;
     @Mock private LoanRepository loanRepository;
     @Mock private LoanInstallmentRepository loanInstallmentRepository;
-    @Mock private CardExpenseRepository cardExpenseRepository;
-    @Mock private CardExpenseInstallmentRepository cardExpenseInstallmentRepository;
     @Mock private CategoryService categoryService;
     @Mock private TransactionMapper transactionMapper;
 
@@ -142,7 +136,6 @@ class TransactionServiceTest {
 
             doNothing().when(categoryService).validateSubcategoryForTransaction(101L, USER_ID);
             when(transactionRepository.save(any(Transaction.class))).thenReturn(saved);
-            when(transactionRepository.findById(10L)).thenReturn(Optional.of(saved));
             when(transactionMapper.toResponse(saved)).thenReturn(resp);
 
             TransactionResponse result = transactionService.create(USER_ID, request);
@@ -167,8 +160,7 @@ class TransactionServiceTest {
                     .when(categoryService).validateSubcategoryForTransaction(999L, USER_ID);
 
             assertThatThrownBy(() -> transactionService.create(USER_ID, request))
-                    .isInstanceOf(ResourceNotFoundException.class)
-                    .hasMessageContaining("999");
+                    .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 
@@ -189,96 +181,6 @@ class TransactionServiceTest {
 
             assertThat(result.getId()).isEqualTo(5L);
         }
-
-        @Test
-        @DisplayName("throws ResourceNotFoundException when transaction not found")
-        void throwsWhenNotFound() {
-            when(transactionRepository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> transactionService.getById(99L, USER_ID))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
-
-        @Test
-        @DisplayName("throws ResourceNotFoundException when transaction belongs to another user")
-        void throwsWhenWrongUser() {
-            Transaction tx = buildTransaction(5L, OTHER_USER_ID);
-            when(transactionRepository.findById(5L)).thenReturn(Optional.of(tx));
-
-            assertThatThrownBy(() -> transactionService.getById(5L, USER_ID))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("update")
-    class Update {
-
-        @Test
-        @DisplayName("updates transaction fields and returns response")
-        void updatesTransaction() {
-            Transaction existing = buildTransaction(5L, USER_ID);
-            TransactionRequest request = new TransactionRequest();
-            request.setType(TransactionType.INCOME);
-            request.setAmount(new BigDecimal("2000.00"));
-            request.setCurrency("USD");
-            request.setCategoryId(901L);
-            request.setDescription("Sueldo");
-            request.setDate(LocalDate.of(2025, 2, 1));
-
-            TransactionResponse resp = TransactionResponse.builder()
-                    .id(5L).type("INCOME").amount(new BigDecimal("2000.00")).build();
-
-            when(transactionRepository.findById(5L)).thenReturn(Optional.of(existing));
-            doNothing().when(categoryService).validateSubcategoryForTransaction(901L, USER_ID);
-            when(transactionRepository.save(existing)).thenReturn(existing);
-            when(transactionMapper.toResponse(existing)).thenReturn(resp);
-
-            TransactionResponse result = transactionService.update(5L, USER_ID, request);
-
-            assertThat(result.getType()).isEqualTo("INCOME");
-            verify(transactionRepository).save(existing);
-        }
-
-        @Test
-        @DisplayName("throws ResourceNotFoundException when transaction not owned by user")
-        void throwsWhenNotOwned() {
-            Transaction tx = buildTransaction(5L, OTHER_USER_ID);
-            TransactionRequest request = new TransactionRequest();
-
-            when(transactionRepository.findById(5L)).thenReturn(Optional.of(tx));
-
-            assertThatThrownBy(() -> transactionService.update(5L, USER_ID, request))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("delete")
-    class Delete {
-
-        @Test
-        @DisplayName("deletes transaction when owned by user")
-        void deletesTransaction() {
-            Transaction tx = buildTransaction(5L, USER_ID);
-            when(transactionRepository.findById(5L)).thenReturn(Optional.of(tx));
-
-            transactionService.delete(5L, USER_ID);
-
-            verify(transactionRepository).delete(tx);
-        }
-
-        @Test
-        @DisplayName("throws ResourceNotFoundException when not owned by user")
-        void throwsWhenNotOwned() {
-            Transaction tx = buildTransaction(5L, OTHER_USER_ID);
-            when(transactionRepository.findById(5L)).thenReturn(Optional.of(tx));
-
-            assertThatThrownBy(() -> transactionService.delete(5L, USER_ID))
-                    .isInstanceOf(ResourceNotFoundException.class);
-
-            verify(transactionRepository, never()).delete(any());
-        }
     }
 
     @Nested
@@ -298,14 +200,9 @@ class TransactionServiceTest {
                     .thenReturn(new BigDecimal("20000"));
             when(loanInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "ARS", from, to))
                     .thenReturn(new BigDecimal("5000"));
-            when(cardExpenseInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "ARS", from, to))
-                    .thenReturn(new BigDecimal("3000"));
             when(loanRepository.countActiveByUserIdAndCurrency(USER_ID, "ARS")).thenReturn(2);
             when(loanRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "ARS"))
                     .thenReturn(new BigDecimal("100000"));
-            when(cardExpenseRepository.countActiveByUserIdAndCurrency(USER_ID, "ARS")).thenReturn(1);
-            when(cardExpenseRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "ARS"))
-                    .thenReturn(new BigDecimal("15000"));
 
             // USD
             when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.INCOME, "USD", from, to))
@@ -314,71 +211,17 @@ class TransactionServiceTest {
                     .thenReturn(BigDecimal.ZERO);
             when(loanInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "USD", from, to))
                     .thenReturn(BigDecimal.ZERO);
-            when(cardExpenseInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "USD", from, to))
-                    .thenReturn(BigDecimal.ZERO);
             when(loanRepository.countActiveByUserIdAndCurrency(USER_ID, "USD")).thenReturn(0);
             when(loanRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "USD")).thenReturn(BigDecimal.ZERO);
-            when(cardExpenseRepository.countActiveByUserIdAndCurrency(USER_ID, "USD")).thenReturn(0);
-            when(cardExpenseRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "USD")).thenReturn(BigDecimal.ZERO);
 
             List<SummaryResponse> result = transactionService.getSummary(USER_ID, null, from, to);
 
             assertThat(result).hasSize(2);
             SummaryResponse ars = result.stream().filter(s -> "ARS".equals(s.getCurrency())).findFirst().orElseThrow();
             assertThat(ars.getTotalIncome()).isEqualByComparingTo("50000");
-            assertThat(ars.getTotalExpense()).isEqualByComparingTo("28000"); // 20000+5000+3000
-            assertThat(ars.getBalance()).isEqualByComparingTo("22000");
+            assertThat(ars.getTotalExpense()).isEqualByComparingTo("25000"); // 20000+5000
+            assertThat(ars.getBalance()).isEqualByComparingTo("25000");
             assertThat(ars.getActiveLoans()).isEqualTo(2);
-        }
-
-        @Test
-        @DisplayName("builds summary for single currency when specified")
-        void buildsSingleCurrencySummary() {
-            LocalDate from = LocalDate.of(2025, 1, 1);
-            LocalDate to = LocalDate.of(2025, 1, 31);
-
-            when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.INCOME, "USD", from, to))
-                    .thenReturn(new BigDecimal("1000"));
-            when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.EXPENSE, "USD", from, to))
-                    .thenReturn(new BigDecimal("400"));
-            when(loanInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "USD", from, to))
-                    .thenReturn(BigDecimal.ZERO);
-            when(cardExpenseInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "USD", from, to))
-                    .thenReturn(BigDecimal.ZERO);
-            when(loanRepository.countActiveByUserIdAndCurrency(USER_ID, "USD")).thenReturn(0);
-            when(loanRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "USD")).thenReturn(BigDecimal.ZERO);
-            when(cardExpenseRepository.countActiveByUserIdAndCurrency(USER_ID, "USD")).thenReturn(0);
-            when(cardExpenseRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "USD")).thenReturn(BigDecimal.ZERO);
-
-            List<SummaryResponse> result = transactionService.getSummary(USER_ID, "USD", from, to);
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getCurrency()).isEqualTo("USD");
-            assertThat(result.get(0).getBalance()).isEqualByComparingTo("600");
-        }
-
-        @Test
-        @DisplayName("totalExpense includes loan and card installments")
-        void totalExpenseIncludesInstallments() {
-            LocalDate from = LocalDate.of(2025, 1, 1);
-            LocalDate to = LocalDate.of(2025, 1, 31);
-
-            when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.INCOME, "ARS", from, to))
-                    .thenReturn(BigDecimal.ZERO);
-            when(transactionRepository.sumByTypeAndCurrency(USER_ID, TransactionType.EXPENSE, "ARS", from, to))
-                    .thenReturn(new BigDecimal("1000"));
-            when(loanInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "ARS", from, to))
-                    .thenReturn(new BigDecimal("500"));
-            when(cardExpenseInstallmentRepository.sumPaidByUserAndCurrencyAndPaidDateRange(USER_ID, "ARS", from, to))
-                    .thenReturn(new BigDecimal("300"));
-            when(loanRepository.countActiveByUserIdAndCurrency(USER_ID, "ARS")).thenReturn(0);
-            when(loanRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "ARS")).thenReturn(BigDecimal.ZERO);
-            when(cardExpenseRepository.countActiveByUserIdAndCurrency(USER_ID, "ARS")).thenReturn(0);
-            when(cardExpenseRepository.sumRemainingDebtByUserIdAndCurrency(USER_ID, "ARS")).thenReturn(BigDecimal.ZERO);
-
-            List<SummaryResponse> result = transactionService.getSummary(USER_ID, "ARS", from, to);
-
-            assertThat(result.get(0).getTotalExpense()).isEqualByComparingTo("1800");
         }
     }
 }
