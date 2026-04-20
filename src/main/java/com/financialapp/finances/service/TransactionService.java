@@ -46,9 +46,25 @@ public class TransactionService {
                 .map(transactionMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public List<TransactionResponse> getByAccount(Long accountId) {
+        return transactionRepository.findByAccountIdOrderByDateDesc(accountId).stream()
+                .map(transactionMapper::toResponse)
+                .toList();
+    }
+
     @Transactional
     public TransactionResponse create(Long userId, TransactionRequest request) {
         categoryService.validateSubcategoryForTransaction(request.getCategoryId(), userId);
+        
+        // 1. Adjust balance first to check for funds and currency (fail-fast)
+        if (request.getAccountId() != null) {
+            BigDecimal delta = request.getType() == TransactionType.INCOME ? 
+                    request.getAmount() : request.getAmount().negate();
+            banksClient.adjustBalance(request.getAccountId(), delta, request.getCurrency());
+        }
+
+        // 2. Save transaction if balance adjust succeeded
         Category category = new Category();
         category.setId(request.getCategoryId());
         Transaction transaction = Transaction.builder()
@@ -64,12 +80,6 @@ public class TransactionService {
         Transaction saved = transactionRepository.save(transaction);
         log.info("Created transaction id={} for userId={}", saved.getId(), userId);
         
-        if (request.getAccountId() != null) {
-            BigDecimal delta = request.getType() == TransactionType.INCOME ? 
-                    request.getAmount() : request.getAmount().negate();
-            banksClient.adjustBalance(request.getAccountId(), delta);
-        }
-        
         return transactionMapper.toResponse(saved);
     }
 
@@ -79,6 +89,13 @@ public class TransactionService {
             throw new BusinessException("Cannot transfer to the same account");
         }
 
+        // 1. Adjust balances (fail-fast on fromAccount funds and currency mismatch)
+        // Deduct from source first
+        banksClient.adjustBalance(request.fromAccountId(), request.amount().negate(), request.currency());
+        // Deposit into target
+        banksClient.adjustBalance(request.toAccountId(), request.amount(), request.currency());
+
+        // 2. Record transactions
         UUID transferGroupId = UUID.randomUUID();
 
         Transaction out = Transaction.builder()
@@ -110,9 +127,6 @@ public class TransactionService {
 
         transactionRepository.save(out);
         transactionRepository.save(in);
-
-        banksClient.adjustBalance(request.fromAccountId(), request.amount().negate());
-        banksClient.adjustBalance(request.toAccountId(), request.amount());
 
         return List.of(transactionMapper.toResponse(out), transactionMapper.toResponse(in));
     }
@@ -160,8 +174,9 @@ public class TransactionService {
 
     @Transactional
     public void recordPayment(com.financialapp.finances.kafka.event.PaymentEvent event) {
-        log.info("Recording payment for userId={} amount={}", event.userId(), event.amount());
+        log.info("Recording payment transaction for userId={} amount={}", event.userId(), event.amount());
         
+        // Record only the transaction row. Balance was already adjusted in ms-banks before emitting this event.
         Category systemCategory = new Category();
         systemCategory.setId(1101L); // Category: Otros -> Varios
 

@@ -48,6 +48,13 @@ public class TransactionController {
                 transactionService.getTransactions(userId, type, categoryId, currency, dateFrom, dateTo, pageable)));
     }
 
+    @GetMapping("/account/{accountId}")
+    @Operation(summary = "List transactions for a specific account")
+    public ResponseEntity<ApiResponse<List<TransactionResponse>>> getByAccount(
+            @PathVariable Long accountId) {
+        return ResponseEntity.ok(ApiResponse.ok(transactionService.getByAccount(accountId)));
+    }
+
     @PostMapping
     @Operation(summary = "Create a transaction")
     public ResponseEntity<ApiResponse<TransactionResponse>> create(

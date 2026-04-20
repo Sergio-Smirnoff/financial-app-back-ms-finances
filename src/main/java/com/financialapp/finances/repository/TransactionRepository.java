@@ -36,6 +36,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
            "WHERE t.userId = :userId AND t.type = :type AND t.currency = :currency " +
+           "AND t.transferGroupId IS NULL " +
            "AND (CAST(:dateFrom AS date) IS NULL OR t.date >= :dateFrom) " +
            "AND (CAST(:dateTo AS date) IS NULL OR t.date <= :dateTo)")
     BigDecimal sumByTypeAndCurrency(
@@ -51,6 +52,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
            "JOIN t.category c " +
            "LEFT JOIN c.parent p " +
            "WHERE t.userId = :userId " +
+           "AND t.transferGroupId IS NULL " +
            "AND (CAST(:dateFrom AS date) IS NULL OR t.date >= :dateFrom) " +
            "AND (CAST(:dateTo AS date) IS NULL OR t.date <= :dateTo) " +
            "GROUP BY COALESCE(p.name, c.name), c.name, t.currency " +
@@ -59,4 +61,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             @Param("userId") Long userId,
             @Param("dateFrom") LocalDate dateFrom,
             @Param("dateTo") LocalDate dateTo);
+
+    @EntityGraph(attributePaths = {"category"})
+    List<Transaction> findByAccountIdOrderByDateDesc(Long accountId);
 }
