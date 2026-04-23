@@ -180,9 +180,9 @@ public class TransactionService {
         Category systemCategory = new Category();
         systemCategory.setId(1101L); // Category: Otros -> Varios
 
-        // If amount is positive, it's an EXPENSE (money going out).
-        // If amount is negative, it's an INCOME (money coming in).
-        TransactionType type = event.amount().signum() >= 0 ? TransactionType.EXPENSE : TransactionType.INCOME;
+        // If amount is negative, it's an EXPENSE (money going out).
+        // If amount is positive, it's an INCOME (money coming in).
+        TransactionType type = event.amount().signum() < 0 ? TransactionType.EXPENSE : TransactionType.INCOME;
         BigDecimal absoluteAmount = event.amount().abs();
 
         Transaction transaction = Transaction.builder()
