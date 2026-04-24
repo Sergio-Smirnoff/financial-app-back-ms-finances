@@ -85,12 +85,12 @@ class TransactionServiceTest {
             Page<Transaction> page = new PageImpl<>(List.of(tx));
             Pageable pageable = PageRequest.of(0, 20);
 
-            when(transactionRepository.findFiltered(USER_ID, null, null, null, null, null, pageable))
+            when(transactionRepository.findFiltered(USER_ID, null, null, null, null, null, null, pageable))
                     .thenReturn(page);
             when(transactionMapper.toResponse(tx)).thenReturn(resp);
 
             Page<TransactionResponse> result = transactionService.getTransactions(
-                    USER_ID, null, null, null, null, null, pageable);
+                    USER_ID, null, null, null, null, null, null, pageable);
 
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getId()).isEqualTo(1L);
