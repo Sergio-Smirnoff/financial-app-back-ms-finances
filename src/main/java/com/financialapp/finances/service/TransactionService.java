@@ -40,9 +40,10 @@ public class TransactionService {
     @Transactional(readOnly = true)
     public Page<TransactionResponse> getTransactions(
             Long userId, TransactionType type, Long categoryId,
-            String currency, LocalDate dateFrom, LocalDate dateTo, Pageable pageable) {
+            String currency, LocalDate dateFrom, LocalDate dateTo, 
+            List<Long> accountIds, Pageable pageable) {
         return transactionRepository
-                .findFiltered(userId, type, categoryId, currency, dateFrom, dateTo, pageable)
+                .findFiltered(userId, type, categoryId, currency, dateFrom, dateTo, accountIds, pageable)
                 .map(transactionMapper::toResponse);
     }
 

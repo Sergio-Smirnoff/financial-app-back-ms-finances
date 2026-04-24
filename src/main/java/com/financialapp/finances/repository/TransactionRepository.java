@@ -24,7 +24,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
            "AND (:categoryId IS NULL OR t.category.id = :categoryId) " +
            "AND (:currency IS NULL OR t.currency = :currency) " +
            "AND (CAST(:dateFrom AS date) IS NULL OR t.date >= :dateFrom) " +
-           "AND (CAST(:dateTo AS date) IS NULL OR t.date <= :dateTo)")
+           "AND (CAST(:dateTo AS date) IS NULL OR t.date <= :dateTo) " +
+           "AND (:accountIds IS NULL OR t.accountId IN :accountIds)")
     Page<Transaction> findFiltered(
             @Param("userId") Long userId,
             @Param("type") TransactionType type,
@@ -32,6 +33,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             @Param("currency") String currency,
             @Param("dateFrom") LocalDate dateFrom,
             @Param("dateTo") LocalDate dateTo,
+            @Param("accountIds") List<Long> accountIds,
             Pageable pageable);
 
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +

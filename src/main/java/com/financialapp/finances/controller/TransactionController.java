@@ -34,7 +34,7 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @GetMapping
-    @Operation(summary = "List transactions (paginated)", description = "Supports filters: type, categoryId, currency, dateFrom, dateTo")
+    @Operation(summary = "List transactions (paginated)", description = "Supports filters: type, categoryId, currency, dateFrom, dateTo, accountIds")
     public ResponseEntity<ApiResponse<Page<TransactionResponse>>> getTransactions(
             @RequestHeader("X-User-Id") Long userId,
             @RequestParam(required = false) TransactionType type,
@@ -43,9 +43,10 @@ public class TransactionController {
             @Parameter(description = "ISO date yyyy-MM-dd")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) List<Long> accountIds,
             @PageableDefault(size = 20, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.ok(
-                transactionService.getTransactions(userId, type, categoryId, currency, dateFrom, dateTo, pageable)));
+                transactionService.getTransactions(userId, type, categoryId, currency, dateFrom, dateTo, accountIds, pageable)));
     }
 
     @GetMapping("/account/{accountId}")
