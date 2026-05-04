@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -55,11 +56,11 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse create(Long userId, TransactionRequest request) {
+    public TransactionResponse create(Long userId, TransactionRequest request, boolean bypassBalance) {
         categoryService.validateSubcategoryForTransaction(request.getCategoryId(), userId);
         
         // 1. Adjust balance first to check for funds and currency (fail-fast)
-        if (request.getAccountId() != null) {
+        if (!bypassBalance && request.getAccountId() != null) {
             BigDecimal delta = request.getType() == TransactionType.INCOME ? 
                     request.getAmount() : request.getAmount().negate();
             banksClient.adjustBalance(request.getAccountId(), delta, request.getCurrency());
@@ -171,6 +172,18 @@ public class TransactionService {
     @Transactional(readOnly = true)
     public List<CategorySummaryResponse> getSummaryByCategory(Long userId, LocalDate dateFrom, LocalDate dateTo) {
         return transactionRepository.findSummaryByCategory(userId, dateFrom, dateTo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Integer> checkDuplicates(List<TransactionRequest> transactions) {
+        return IntStream.range(0, transactions.size())
+                .filter(i -> {
+                    TransactionRequest t = transactions.get(i);
+                    return transactionRepository.existsByAccountIdAndDateAndAmountAndDescription(
+                            t.getAccountId(), t.getDate(), t.getAmount(), t.getDescription());
+                })
+                .boxed()
+                .toList();
     }
 
     @Transactional

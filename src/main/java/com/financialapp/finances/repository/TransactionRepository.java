@@ -66,4 +66,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     @EntityGraph(attributePaths = {"category"})
     List<Transaction> findByAccountIdOrderByDateDesc(Long accountId);
+
+    boolean existsByAccountIdAndDateAndAmountAndDescription(Long accountId, LocalDate date, BigDecimal amount, String description);
 }

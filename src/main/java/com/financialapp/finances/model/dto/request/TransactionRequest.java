@@ -2,9 +2,7 @@ package com.financialapp.finances.model.dto.request;
 
 import com.financialapp.finances.model.enums.TransactionType;
 import jakarta.validation.constraints.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,6 +10,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TransactionRequest {
 
     @NotNull(message = "Type is required")

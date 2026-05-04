@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -28,6 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/finances/transactions")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Transactions", description = "Income and expense transaction management")
 public class TransactionController {
 
@@ -60,9 +62,12 @@ public class TransactionController {
     @Operation(summary = "Create a transaction")
     public ResponseEntity<ApiResponse<TransactionResponse>> create(
             @RequestHeader("X-User-Id") Long userId,
+            @RequestParam(required = false, defaultValue = "false") boolean bypassBalance,
             @Valid @RequestBody TransactionRequest request) {
+        log.info("Creating transaction: userId={}, bypassBalance={}, amount={}, accountId={}", 
+                userId, bypassBalance, request.getAmount(), request.getAccountId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Transaction created", transactionService.create(userId, request)));
+                .body(ApiResponse.ok("Transaction created", transactionService.create(userId, request, bypassBalance)));
     }
 
     @PostMapping("/transfer")
@@ -121,5 +126,13 @@ public class TransactionController {
             @Parameter(description = "ISO date yyyy-MM-dd")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
         return ResponseEntity.ok(ApiResponse.ok(transactionService.getSummaryByCategory(userId, dateFrom, dateTo)));
+    }
+
+    @PostMapping("/duplicates-check")
+    @Operation(summary = "Check for existing transactions to avoid duplicates",
+               description = "Returns a list of indices of transactions that already exist in the database")
+    public ResponseEntity<ApiResponse<List<Integer>>> checkDuplicates(
+            @RequestBody List<TransactionRequest> transactions) {
+        return ResponseEntity.ok(ApiResponse.ok(transactionService.checkDuplicates(transactions)));
     }
 }

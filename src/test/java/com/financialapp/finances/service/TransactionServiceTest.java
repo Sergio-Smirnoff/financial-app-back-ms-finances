@@ -119,7 +119,7 @@ class TransactionServiceTest {
             when(transactionRepository.save(any(Transaction.class))).thenReturn(saved);
             when(transactionMapper.toResponse(saved)).thenReturn(resp);
 
-            TransactionResponse result = transactionService.create(USER_ID, request);
+            TransactionResponse result = transactionService.create(USER_ID, request, false);
 
             assertThat(result.getId()).isEqualTo(10L);
             assertThat(result.getAmount()).isEqualByComparingTo("1500.00");
