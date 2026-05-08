@@ -16,8 +16,15 @@ public class FinancesEventProducer {
     private static final String TOPIC_PAYMENT_DUE = "payment.due";
     private static final String TOPIC_LOAN_REMINDER = "loan.reminder";
     private static final String TOPIC_INSTALLMENT_REMINDER = "installment.reminder";
+    private static final String TOPIC_TRANSACTION_CREATED = "transaction.created";
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    public void publishTransactionCreated(com.financialapp.finances.kafka.event.TransactionCreatedEvent event) {
+        log.info("Publishing transaction.created event for transactionId={}, userId={}",
+                event.transactionId(), event.userId());
+        kafkaTemplate.send(TOPIC_TRANSACTION_CREATED, String.valueOf(event.userId()), event);
+    }
 
     public void publishPaymentDue(PaymentDueEvent event) {
         log.info("Publishing payment.due event for userId={}, cardExpenseId={}",
