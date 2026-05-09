@@ -62,12 +62,11 @@ public class TransactionController {
     @Operation(summary = "Create a transaction")
     public ResponseEntity<ApiResponse<TransactionResponse>> create(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(required = false, defaultValue = "false") boolean bypassBalance,
             @Valid @RequestBody TransactionRequest request) {
-        log.info("Creating transaction: userId={}, bypassBalance={}, amount={}, accountId={}", 
-                userId, bypassBalance, request.getAmount(), request.getAccountId());
+        log.info("Creating transaction: userId={}, amount={}, accountId={}", 
+                userId, request.getAmount(), request.getAccountId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Transaction created", transactionService.create(userId, request, bypassBalance)));
+                .body(ApiResponse.ok("Transaction created", transactionService.create(userId, request)));
     }
 
     @PostMapping("/transfer")
