@@ -3,6 +3,8 @@ package com.financialapp.finances.service;
 import com.financialapp.finances.client.BanksClient;
 import com.financialapp.finances.exception.BusinessException;
 import com.financialapp.finances.exception.ResourceNotFoundException;
+import com.financialapp.finances.kafka.event.TransactionCreatedEvent;
+import com.financialapp.finances.kafka.producer.FinancesEventProducer;
 import com.financialapp.finances.mapper.TransactionMapper;
 import com.financialapp.finances.model.dto.request.TransactionRequest;
 import com.financialapp.finances.model.dto.request.TransferRequest;
@@ -37,6 +39,7 @@ public class TransactionService {
     private final CategoryService categoryService;
     private final TransactionMapper transactionMapper;
     private final BanksClient banksClient;
+    private final FinancesEventProducer eventProducer;
 
     @Transactional(readOnly = true)
     public Page<TransactionResponse> getTransactions(
@@ -56,17 +59,10 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse create(Long userId, TransactionRequest request, boolean bypassBalance) {
+    public TransactionResponse create(Long userId, TransactionRequest request) {
         categoryService.validateSubcategoryForTransaction(request.getCategoryId(), userId);
         
-        // 1. Adjust balance first to check for funds and currency (fail-fast)
-        if (!bypassBalance && request.getAccountId() != null) {
-            BigDecimal delta = request.getType() == TransactionType.INCOME ? 
-                    request.getAmount() : request.getAmount().negate();
-            banksClient.adjustBalance(request.getAccountId(), delta, request.getCurrency());
-        }
-
-        // 2. Save transaction if balance adjust succeeded
+        // 1. Save transaction first (Event-Sourcing approach: DB is source of truth)
         Category category = new Category();
         category.setId(request.getCategoryId());
         Transaction transaction = Transaction.builder()
@@ -81,6 +77,21 @@ public class TransactionService {
                 .build();
         Transaction saved = transactionRepository.save(transaction);
         log.info("Created transaction id={} for userId={}", saved.getId(), userId);
+
+        // 2. Publish event for asynchronous balance adjustment in ms-banks
+        if (saved.getAccountId() != null) {
+            BigDecimal signedAmount = saved.getType() == TransactionType.INCOME ? 
+                    saved.getAmount() : saved.getAmount().negate();
+            
+            eventProducer.publishTransactionCreated(new TransactionCreatedEvent(
+                    saved.getId(),
+                    saved.getUserId(),
+                    saved.getAccountId(),
+                    signedAmount,
+                    saved.getCurrency(),
+                    saved.getDate()
+            ));
+        }
         
         return transactionMapper.toResponse(saved);
     }
@@ -91,13 +102,7 @@ public class TransactionService {
             throw new BusinessException("Cannot transfer to the same account");
         }
 
-        // 1. Adjust balances (fail-fast on fromAccount funds and currency mismatch)
-        // Deduct from source first
-        banksClient.adjustBalance(request.fromAccountId(), request.amount().negate(), request.currency());
-        // Deposit into target
-        banksClient.adjustBalance(request.toAccountId(), request.amount(), request.currency());
-
-        // 2. Record transactions
+        // 1. Record transactions
         UUID transferGroupId = UUID.randomUUID();
 
         Transaction out = Transaction.builder()
@@ -127,10 +132,29 @@ public class TransactionService {
         out.setCategory(systemCategory);
         in.setCategory(systemCategory);
 
-        transactionRepository.save(out);
-        transactionRepository.save(in);
+        Transaction savedOut = transactionRepository.save(out);
+        Transaction savedIn = transactionRepository.save(in);
 
-        return List.of(transactionMapper.toResponse(out), transactionMapper.toResponse(in));
+        // 2. Publish events for asynchronous balance adjustments
+        eventProducer.publishTransactionCreated(new TransactionCreatedEvent(
+                savedOut.getId(),
+                savedOut.getUserId(),
+                savedOut.getAccountId(),
+                savedOut.getAmount().negate(),
+                savedOut.getCurrency(),
+                savedOut.getDate()
+        ));
+
+        eventProducer.publishTransactionCreated(new TransactionCreatedEvent(
+                savedIn.getId(),
+                savedIn.getUserId(),
+                savedIn.getAccountId(),
+                savedIn.getAmount(),
+                savedIn.getCurrency(),
+                savedIn.getDate()
+        ));
+
+        return List.of(transactionMapper.toResponse(savedOut), transactionMapper.toResponse(savedIn));
     }
 
     @Transactional(readOnly = true)

@@ -11,7 +11,7 @@ spring:
     password: ${DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20
+      maximum-pool-size: 5
       minimum-idle: 5
       connection-timeout: 20000
       idle-timeout: 300000
@@ -39,8 +39,9 @@ spring:
     consumer:
       group-id: ${spring.application.name}-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: "com.financialapp.*"
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.financialapp.finances.kafka.event.PaymentEvent
@@ -60,7 +61,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
