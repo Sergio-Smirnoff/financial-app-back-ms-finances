@@ -1,0 +1,63 @@
+package com.financialapp.finances.domain.common.model;
+
+import com.financialapp.finances.domain.exception.CurrencyMismatchException;
+import com.financialapp.finances.domain.exception.InvalidCurrencyException;
+import com.financialapp.finances.domain.exception.InvalidMoneyException;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.Currency;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class MoneyTest {
+
+    private static final Currency ARS = SupportedCurrency.requireSupported("ARS");
+    private static final Currency USD = SupportedCurrency.requireSupported("USD");
+
+    private static Money ars(String amount) {
+        return new Money(new BigDecimal(amount), ARS);
+    }
+
+    @Test void normalisesScaleToTwo() {
+        assertThat(ars("10").amount()).isEqualByComparingTo("10.00");
+        assertThat(ars("10.005").amount()).isEqualByComparingTo("10.00"); // HALF_EVEN
+    }
+
+    @Test void positiveIsInflowNegativeIsOutflow() {
+        assertThat(ars("10.00").isInflow()).isTrue();
+        assertThat(ars("10.00").isOutflow()).isFalse();
+        assertThat(ars("-10.00").isOutflow()).isTrue();
+        assertThat(ars("-10.00").isInflow()).isFalse();
+    }
+
+    @Test void addsAndSubtractsSameCurrency() {
+        assertThat(ars("10.00").add(ars("5.50"))).isEqualTo(ars("15.50"));
+        assertThat(ars("10.00").subtract(ars("4.00"))).isEqualTo(ars("6.00"));
+    }
+
+    @Test void negates() {
+        assertThat(ars("3.00").negate()).isEqualTo(ars("-3.00"));
+    }
+
+    @Test void rejectsZeroAmount() {
+        assertThatThrownBy(() -> ars("0"))
+            .isInstanceOf(InvalidMoneyException.class);
+    }
+
+    @Test void rejectsNullAmount() {
+        assertThatThrownBy(() -> new Money(null, ARS))
+            .isInstanceOf(InvalidMoneyException.class);
+    }
+
+    @Test void rejectsUnsupportedCurrency() {
+        assertThatThrownBy(() -> new Money(new BigDecimal("1.00"), Currency.getInstance("JPY")))
+            .isInstanceOf(InvalidCurrencyException.class);
+    }
+
+    @Test void rejectsArithmeticAcrossCurrencies() {
+        assertThatThrownBy(() -> ars("1.00").add(new Money(new BigDecimal("1.00"), USD)))
+            .isInstanceOf(CurrencyMismatchException.class);
+    }
+}
