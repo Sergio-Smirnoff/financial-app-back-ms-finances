@@ -11,9 +11,10 @@ import java.util.Currency;
  * A positive monetary magnitude in a single {@link Currency}. {@code amount} is always
  * greater than zero — direction (expense / income / transfer) is not carried by Money; it is
  * derived per account from transaction ownership (see {@code Transaction.signedFor}, slice 3).
- * The amount is normalised to scale 2 (HALF_EVEN). The currency must be one the application
- * supports ({@link SupportedCurrency}); every invariant is enforced in the canonical
- * constructor so no construction path can bypass it.
+ * The amount is normalised to scale 2 (HALF_EVEN). Any JDK-known {@link Currency} is accepted;
+ * the supported-currency whitelist is enforced at the boundary, not here (see
+ * {@code SupportedCurrencies}). Every invariant is enforced in the canonical constructor so no
+ * construction path can bypass it.
  */
 public record Money(BigDecimal amount, Currency currency) {
 
@@ -24,7 +25,6 @@ public record Money(BigDecimal amount, Currency currency) {
         if (currency == null) {
             throw new InvalidMoneyException("currency must not be null");
         }
-        SupportedCurrency.requireSupported(currency);
         amount = amount.setScale(2, RoundingMode.HALF_EVEN);
         if (amount.signum() <= 0) {
             throw new InvalidMoneyException("amount must be positive (greater than zero)");
