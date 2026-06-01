@@ -15,7 +15,11 @@ public enum DomainErrorCode {
 
     // --- Category ---
     INVALID_CATEGORY_NAME(ErrorCategory.BAD_REQUEST, "invalid_category_name"),
-    SUBCATEGORY_NOT_IN_CATEGORY(ErrorCategory.NOT_FOUND, "subcategory_not_in_category");
+    SUBCATEGORY_NOT_IN_CATEGORY(ErrorCategory.NOT_FOUND, "subcategory_not_in_category"),
+
+    // --- Transaction ---
+    SAME_ACCOUNT_TRANSACTION(ErrorCategory.BAD_REQUEST, "same_account_transaction"),
+    TRANSACTION_NOT_OWNED(ErrorCategory.UNPROCESSABLE, "transaction_not_owned");
 
     private final ErrorCategory category;
     private final String code;
