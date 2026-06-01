@@ -1,6 +1,8 @@
 package com.financialapp.finances.infrastructure.messaging.listener;
 
 import com.financialapp.finances.domain.common.model.*;
+import com.financialapp.finances.domain.exception.UnsupportedCurrencyException;
+import com.financialapp.finances.domain.gateway.SupportedCurrencies;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.repository.TransactionRepository;
 import com.financialapp.finances.infrastructure.messaging.payload.PaymentEvent;
@@ -32,6 +34,7 @@ public class PaymentEventListener {
     private final TransactionRepository transactionRepository;
     private final ProcessedInboundEventJpaRepository processedEvents;
     private final SystemCategoryResolver systemCategories;
+    private final SupportedCurrencies supportedCurrencies;
 
     @KafkaListener(topics = "payment-events", groupId = "${spring.application.name}-group")
     @Transactional
@@ -47,13 +50,18 @@ public class PaymentEventListener {
         Cbu from = income ? Cbu.EXTERNAL_INSTALLMENT_CBU : account;
         Cbu to = income ? account : Cbu.EXTERNAL_INSTALLMENT_CBU;
 
+        Currency currency = Currency.getInstance(event.currency());
+        if (!supportedCurrencies.isSupported(currency)) {
+            throw new UnsupportedCurrencyException(event.currency(), supportedCurrencies.all());
+        }
+
         Long categoryId = systemCategories
                 .findUnassignedCategoryId(income ? "INCOME" : "EXPENSE")
                 .orElseThrow(() -> new IllegalStateException("System 'Unassigned' category missing"));
 
         Transaction tx = Transaction.create(
                 new UserId(event.userId()), from, to,
-                new Money(event.amount().abs(), Currency.getInstance(event.currency())),
+                new Money(event.amount().abs(), currency),
                 new CategoryId(categoryId),
                 event.description() == null ? "Automatic payment" : event.description(),
                 event.date() == null ? LocalDate.now() : event.date());

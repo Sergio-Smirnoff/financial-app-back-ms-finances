@@ -24,8 +24,10 @@ class PaymentEventListenerTest {
     private final TransactionRepository repo = mock(TransactionRepository.class);
     private final ProcessedInboundEventJpaRepository processed = mock(ProcessedInboundEventJpaRepository.class);
     private final SystemCategoryResolver categories = mock(SystemCategoryResolver.class);
+    private final com.financialapp.finances.domain.gateway.SupportedCurrencies supportedCurrencies =
+            mock(com.financialapp.finances.domain.gateway.SupportedCurrencies.class);
     private final PaymentEventListener listener =
-            new PaymentEventListener(repo, processed, categories);
+            new PaymentEventListener(repo, processed, categories, supportedCurrencies);
 
     private PaymentEvent loanPayment() {
         return new PaymentEvent(42L, "0001112223334445556667", new BigDecimal("1250.00"),
@@ -35,6 +37,7 @@ class PaymentEventListenerTest {
     @Test
     void recordsExpenseWithSentinelCounterpartyAndDoesNotEcho() {
         when(processed.existsById(anyString())).thenReturn(false);
+        when(supportedCurrencies.isSupported(any())).thenReturn(true);
         when(categories.findUnassignedCategoryId("EXPENSE")).thenReturn(Optional.of(900L));
         when(repo.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -52,6 +55,7 @@ class PaymentEventListenerTest {
     @Test
     void incomeWhenDescriptionIndicatesADeposit() {
         when(processed.existsById(anyString())).thenReturn(false);
+        when(supportedCurrencies.isSupported(any())).thenReturn(true);
         when(categories.findUnassignedCategoryId("INCOME")).thenReturn(Optional.of(901L));
         when(repo.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -62,6 +66,20 @@ class PaymentEventListenerTest {
         verify(repo).save(cap.capture());
         assertThat(cap.getValue().fromCbu()).isEqualTo(Cbu.EXTERNAL_INSTALLMENT_CBU);
         assertThat(cap.getValue().toCbu()).isEqualTo(new Cbu("0001112223334445556667"));
+    }
+
+    @Test
+    void rejectsUnsupportedCurrencyAndRecordsNothing() {
+        when(processed.existsById(anyString())).thenReturn(false);
+        when(supportedCurrencies.isSupported(java.util.Currency.getInstance("JPY"))).thenReturn(false);
+        when(supportedCurrencies.all()).thenReturn(java.util.Set.of(java.util.Currency.getInstance("ARS")));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                listener.onPaymentEvent(new PaymentEvent(42L, "0001112223334445556667",
+                        new java.math.BigDecimal("100.00"), "JPY", "Loan Payment", java.time.LocalDate.of(2026, 6, 1))))
+                .isInstanceOf(com.financialapp.finances.domain.exception.UnsupportedCurrencyException.class);
+
+        verify(repo, never()).save(any());
     }
 
     @Test
