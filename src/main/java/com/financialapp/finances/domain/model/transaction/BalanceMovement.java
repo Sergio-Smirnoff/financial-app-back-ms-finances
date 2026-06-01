@@ -20,4 +20,9 @@ public record BalanceMovement(Cbu account, BigDecimal signedAmount, Currency cur
             throw new IllegalArgumentException("signedAmount must not be zero");
         }
     }
+
+    /** The opposite movement (negated amount) — used to undo this movement's balance effect. */
+    public BalanceMovement reversed() {
+        return new BalanceMovement(account, signedAmount.negate(), currency);
+    }
 }

@@ -30,4 +30,12 @@ class BalanceMovementTest {
         assertThatThrownBy(() -> new BalanceMovement(ACCOUNT, null, ARS))
             .isInstanceOf(NullPointerException.class);
     }
+
+    @Test void reversedNegatesAmountKeepingAccountAndCurrency() {
+        BalanceMovement debit = new BalanceMovement(ACCOUNT, new BigDecimal("-100.00"), ARS);
+        BalanceMovement reversed = debit.reversed();
+        assertThat(reversed.account()).isEqualTo(debit.account());
+        assertThat(reversed.currency()).isEqualTo(ARS);
+        assertThat(reversed.signedAmount()).isEqualByComparingTo("100.00");
+    }
 }
