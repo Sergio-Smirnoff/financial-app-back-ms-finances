@@ -11,7 +11,11 @@ public enum DomainErrorCode {
     INVALID_MONEY(ErrorCategory.UNPROCESSABLE, "invalid_money"),
     CURRENCY_MISMATCH(ErrorCategory.UNPROCESSABLE, "currency_mismatch"),
     INVALID_CBU(ErrorCategory.BAD_REQUEST, "invalid_cbu"),
-    INVALID_IDENTIFIER(ErrorCategory.BAD_REQUEST, "invalid_identifier");
+    INVALID_IDENTIFIER(ErrorCategory.BAD_REQUEST, "invalid_identifier"),
+
+    // --- Category ---
+    INVALID_CATEGORY_NAME(ErrorCategory.BAD_REQUEST, "invalid_category_name"),
+    SUBCATEGORY_NOT_IN_CATEGORY(ErrorCategory.NOT_FOUND, "subcategory_not_in_category");
 
     private final ErrorCategory category;
     private final String code;
