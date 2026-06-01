@@ -15,4 +15,9 @@ public class DomainServiceConfig {
     public TransactionPosting transactionPosting() {
         return new TransactionPosting();
     }
+
+    @Bean
+    public com.financialapp.finances.domain.service.TransactionClassifier transactionClassifier() {
+        return new com.financialapp.finances.domain.service.TransactionClassifier();
+    }
 }
