@@ -1,10 +1,10 @@
 package com.financialapp.finances.web.mapper;
 
+import com.financialapp.finances.application.transaction.CategoryNameLookup;
 import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.model.transaction.ClassifiedTransaction;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
-import com.financialapp.finances.infrastructure.persistence.repository.CategoryNameResolver;
 import com.financialapp.finances.web.dto.response.AccountTransactionResponse;
 import com.financialapp.finances.web.dto.response.TransactionResponse;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 class TransactionWebMapperTest {
 
     private static final Currency ARS = Currency.getInstance("ARS");
-    private final CategoryNameResolver names = mock(CategoryNameResolver.class);
+    private final CategoryNameLookup names = mock(CategoryNameLookup.class);
     private final TransactionWebMapper mapper = new TransactionWebMapper(names);
 
     private final Cbu mine = new Cbu("0001112223334445556667");
@@ -41,7 +41,7 @@ class TransactionWebMapperTest {
 
     @Test
     void accountViewSignsForTheAccountAndResolvesNames() {
-        when(names.resolve(5L)).thenReturn(new CategoryNameResolver.CategoryNames("Housing", "Rent"));
+        when(names.resolve(5L)).thenReturn(new CategoryNameLookup.CategoryNames("Housing", "Rent"));
         AccountTransactionResponse r = mapper.toAccountResponse(tx(), mine);
         assertThat(r.transactionId()).isEqualTo(77L);
         assertThat(r.accountCbu()).isEqualTo("0001112223334445556667");

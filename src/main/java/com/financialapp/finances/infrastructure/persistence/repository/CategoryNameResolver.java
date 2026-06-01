@@ -1,5 +1,6 @@
 package com.financialapp.finances.infrastructure.persistence.repository;
 
+import com.financialapp.finances.application.transaction.CategoryNameLookup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -8,14 +9,13 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * Resolves a category id to display names from the legacy categories table (subcategory name +
- * its parent category name). Temporary bridge until the Category aggregate migrates (slice 5).
+ * JDBC adapter for {@link CategoryNameLookup}: resolves a category id to display names from the
+ * legacy categories table (subcategory name + its parent category name). Temporary bridge until
+ * the Category aggregate migrates (slice 5).
  */
 @Component
 @RequiredArgsConstructor
-public class CategoryNameResolver {
-
-    public record CategoryNames(String category, String subcategory) {}
+public class CategoryNameResolver implements CategoryNameLookup {
 
     private static final String QUERY =
             "SELECT c.name AS name, p.name AS parent_name " +
@@ -25,6 +25,7 @@ public class CategoryNameResolver {
 
     private final JdbcTemplate jdbcTemplate;
 
+    @Override
     public CategoryNames resolve(Long categoryId) {
         try {
             Map<String, Object> row = jdbcTemplate.queryForMap(QUERY, categoryId);

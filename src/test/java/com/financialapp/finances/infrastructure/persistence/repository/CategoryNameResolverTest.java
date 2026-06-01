@@ -1,5 +1,6 @@
 package com.financialapp.finances.infrastructure.persistence.repository;
 
+import com.financialapp.finances.application.transaction.CategoryNameLookup;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,7 +20,7 @@ class CategoryNameResolverTest {
     void returnsNamesForKnownCategory() {
         when(jdbc.queryForMap(anyString(), eq(5L)))
                 .thenReturn(Map.of("name", "Rent", "parent_name", "Housing"));
-        CategoryNameResolver.CategoryNames names = resolver.resolve(5L);
+        CategoryNameLookup.CategoryNames names = resolver.resolve(5L);
         assertThat(names.category()).isEqualTo("Housing");
         assertThat(names.subcategory()).isEqualTo("Rent");
     }
@@ -28,7 +29,7 @@ class CategoryNameResolverTest {
     void returnsNullsWhenAbsent() {
         when(jdbc.queryForMap(anyString(), eq(99L)))
                 .thenThrow(new EmptyResultDataAccessException(1));
-        CategoryNameResolver.CategoryNames names = resolver.resolve(99L);
+        CategoryNameLookup.CategoryNames names = resolver.resolve(99L);
         assertThat(names.category()).isNull();
         assertThat(names.subcategory()).isNull();
     }

@@ -10,7 +10,7 @@ import com.financialapp.finances.domain.usecase.transaction.ListAccountTransacti
 import com.financialapp.finances.domain.usecase.transaction.ListUserTransactions;
 import com.financialapp.finances.domain.usecase.transaction.RecordTransaction;
 import com.financialapp.finances.domain.usecase.transaction.UpdateTransaction;
-import com.financialapp.finances.infrastructure.persistence.repository.CategoryNameResolver;
+import com.financialapp.finances.application.transaction.CategoryNameLookup;
 import com.financialapp.finances.web.mapper.TransactionWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ class TransactionControllerTest {
     @MockBean ListAccountTransactions listAccountTransactions;
     @MockBean TransactionClassifier classifier;
     @MockBean AccountOwnershipGateway ownershipGateway;
-    @MockBean CategoryNameResolver categoryNameResolver;
+    @MockBean CategoryNameLookup categoryNameLookup;
 
     private static final Currency ARS = Currency.getInstance("ARS");
 
@@ -55,7 +55,7 @@ class TransactionControllerTest {
                 mine, new Cbu("9998887776665554443332"),
                 new Money(new BigDecimal("100.00"), ARS), new CategoryId(5L), "Rent", LocalDate.of(2026, 6, 1));
         when(listAccountTransactions.execute(eq(mine), any(), any(), any())).thenReturn(List.of(tx));
-        when(categoryNameResolver.resolve(5L)).thenReturn(new CategoryNameResolver.CategoryNames("Housing", "Rent"));
+        when(categoryNameLookup.resolve(5L)).thenReturn(new CategoryNameLookup.CategoryNames("Housing", "Rent"));
 
         mvc.perform(get("/api/v1/finances/transactions")
                         .param("accountCbu", "0001112223334445556667"))
