@@ -52,6 +52,11 @@ finances:
     batch-size: ${OUTBOX_BATCH_SIZE:100}
   ownership:
     cache-ttl-ms: ${OWNERSHIP_CACHE_TTL_MS:60000}
+  currencies:
+    # Business policy: currencies this service accepts on NEW writes. Adding one is a YAML edit + restart.
+    # Removing one is soft — existing rows keep reading; only new writes are rejected (spec §11).
+    # Grep the transactions table before pruning a currency.
+    supported: ${SUPPORTED_CURRENCIES:ARS,USD,EUR}
 
 alerts:
   days-before-payment: ${DAYS_BEFORE_PAYMENT_ALERT:3}

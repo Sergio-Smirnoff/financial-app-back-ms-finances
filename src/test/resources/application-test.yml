@@ -1,0 +1,3 @@
+finances:
+  currencies:
+    supported: [ARS, USD]
