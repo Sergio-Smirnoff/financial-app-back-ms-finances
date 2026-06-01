@@ -1,13 +1,11 @@
-package com.financialapp.finances.model.entity;
+package com.financialapp.finances.infrastructure.persistence.entity;
 
-import com.financialapp.finances.model.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "transactions", schema = "finances")
@@ -16,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Transaction {
+public class TransactionJpaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,15 +23,11 @@ public class Transaction {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "account_id")
-    private Long accountId;
+    @Column(name = "from_cbu", nullable = false, length = 22)
+    private String fromCbu;
 
-    @Column(name = "transfer_group_id")
-    private UUID transferGroupId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    private TransactionType type;
+    @Column(name = "to_cbu", nullable = false, length = 22)
+    private String toCbu;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
@@ -41,9 +35,8 @@ public class Transaction {
     @Column(nullable = false, length = 3)
     private String currency;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private Category category;
+    @Column(name = "category_id", nullable = false)
+    private Long categoryId;
 
     @Column(length = 500)
     private String description;
@@ -56,15 +49,4 @@ public class Transaction {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

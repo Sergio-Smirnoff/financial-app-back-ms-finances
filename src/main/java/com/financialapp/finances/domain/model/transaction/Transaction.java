@@ -5,11 +5,15 @@ import com.financialapp.finances.domain.common.model.CategoryId;
 import com.financialapp.finances.domain.common.model.Money;
 import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.common.model.UserId;
+import com.financialapp.finances.domain.event.DomainEvent;
+import com.financialapp.finances.domain.event.TransactionCreated;
 import com.financialapp.finances.domain.exception.transaction.SameAccountTransactionException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Currency;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -32,6 +36,12 @@ public final class Transaction {
     private final CategoryId categoryId;
     private final String description;
     private final LocalDate date;
+
+    /**
+     * Events this aggregate has recorded but the application has not yet drained. The value fields
+     * above stay immutable; only this buffer mutates (a standard aggregate event-recording seam).
+     */
+    private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     private Transaction(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
                         CategoryId categoryId, String description, LocalDate date) {
@@ -86,6 +96,30 @@ public final class Transaction {
 
     public boolean involves(Cbu cbu) {
         return fromCbu.equals(cbu) || toCbu.equals(cbu);
+    }
+
+    /**
+     * Record one {@link TransactionCreated} event per balance movement this transaction caused on an
+     * owned account (computed by {@code TransactionPosting}). The aggregate must be persisted first:
+     * each event carries this transaction's id, which ms-banks-bound consumers rely on. The
+     * application drains them via {@link #pullDomainEvents()} and hands them to the event publisher.
+     */
+    public void recordCreationEvents(List<BalanceMovement> movements) {
+        if (id == null) {
+            throw new IllegalStateException(
+                "cannot record creation events before the transaction is persisted");
+        }
+        for (BalanceMovement movement : movements) {
+            domainEvents.add(new TransactionCreated(
+                id, movement.account(), movement.signedAmount(), movement.currency()));
+        }
+    }
+
+    /** Return and clear the recorded domain events. */
+    public List<DomainEvent> pullDomainEvents() {
+        List<DomainEvent> drained = List.copyOf(domainEvents);
+        domainEvents.clear();
+        return drained;
     }
 
     public Currency currency() {

@@ -1,4 +1,4 @@
 /**
- * Domain event base type and cross-aggregate domain events (e.g. TransactionRecorded).
+ * Domain event base type and the domain events aggregates record (e.g. TransactionCreated).
  */
 package com.financialapp.finances.domain.event;

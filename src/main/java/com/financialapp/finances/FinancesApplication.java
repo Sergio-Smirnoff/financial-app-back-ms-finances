@@ -10,7 +10,10 @@ import com.financialapp.finances.config.AlertProperties;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableFeignClients(basePackages = "com.financialapp.finances.client")
+@EnableFeignClients(basePackages = {
+        "com.financialapp.finances.client",
+        "com.financialapp.finances.infrastructure.gateway"
+})
 @EnableConfigurationProperties(AlertProperties.class)
 public class FinancesApplication {
 

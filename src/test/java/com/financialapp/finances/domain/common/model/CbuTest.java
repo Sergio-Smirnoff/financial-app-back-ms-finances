@@ -28,4 +28,9 @@ class CbuTest {
         assertThatThrownBy(() -> new Cbu(null))
             .isInstanceOf(InvalidCbuException.class);
     }
+
+    @Test void exposesAnExternalInstallmentSentinelOfTwentyTwoZeros() {
+        assertThat(Cbu.EXTERNAL_INSTALLMENT_CBU.cbuNumber()).isEqualTo("0000000000000000000000");
+        assertThat(Cbu.EXTERNAL_INSTALLMENT_CBU).isEqualTo(new Cbu("0000000000000000000000"));
+    }
 }

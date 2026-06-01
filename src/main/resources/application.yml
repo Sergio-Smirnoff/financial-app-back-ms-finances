@@ -44,7 +44,14 @@ spring:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: "com.financialapp.*"
         spring.json.use.type.headers: false
-        spring.json.value.default.type: com.financialapp.finances.kafka.event.PaymentEvent
+        spring.json.value.default.type: com.financialapp.finances.infrastructure.messaging.payload.PaymentEvent
+
+finances:
+  outbox:
+    poll-ms: ${OUTBOX_POLL_MS:2000}
+    batch-size: ${OUTBOX_BATCH_SIZE:100}
+  ownership:
+    cache-ttl-ms: ${OWNERSHIP_CACHE_TTL_MS:60000}
 
 alerts:
   days-before-payment: ${DAYS_BEFORE_PAYMENT_ALERT:3}
