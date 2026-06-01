@@ -1,4 +1,4 @@
-package com.financialapp.finances.config;
+package com.financialapp.finances.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
