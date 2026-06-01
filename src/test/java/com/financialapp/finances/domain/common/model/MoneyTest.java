@@ -25,25 +25,26 @@ class MoneyTest {
         assertThat(ars("10.005").amount()).isEqualByComparingTo("10.00"); // HALF_EVEN
     }
 
-    @Test void positiveIsInflowNegativeIsOutflow() {
-        assertThat(ars("10.00").isInflow()).isTrue();
-        assertThat(ars("10.00").isOutflow()).isFalse();
-        assertThat(ars("-10.00").isOutflow()).isTrue();
-        assertThat(ars("-10.00").isInflow()).isFalse();
-    }
-
     @Test void addsAndSubtractsSameCurrency() {
         assertThat(ars("10.00").add(ars("5.50"))).isEqualTo(ars("15.50"));
         assertThat(ars("10.00").subtract(ars("4.00"))).isEqualTo(ars("6.00"));
     }
 
-    @Test void negates() {
-        assertThat(ars("3.00").negate()).isEqualTo(ars("-3.00"));
-    }
-
     @Test void rejectsZeroAmount() {
         assertThatThrownBy(() -> ars("0"))
             .isInstanceOf(InvalidMoneyException.class);
+    }
+
+    @Test void rejectsNegativeAmount() {
+        assertThatThrownBy(() -> ars("-10.00"))
+            .isInstanceOf(InvalidMoneyException.class);
+    }
+
+    @Test void subtractToNonPositiveIsRejected() {
+        assertThatThrownBy(() -> ars("4.00").subtract(ars("4.00")))
+            .isInstanceOf(InvalidMoneyException.class); // nets to zero → not a valid Money
+        assertThatThrownBy(() -> ars("4.00").subtract(ars("9.00")))
+            .isInstanceOf(InvalidMoneyException.class); // nets negative → not a valid Money
     }
 
     @Test void rejectsNullAmount() {
