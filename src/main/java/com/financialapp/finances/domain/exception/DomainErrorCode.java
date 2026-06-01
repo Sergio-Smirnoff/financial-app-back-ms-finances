@@ -8,6 +8,7 @@ public enum DomainErrorCode {
 
     // --- Value-object validation ---
     INVALID_CURRENCY(ErrorCategory.BAD_REQUEST, "invalid_currency"),
+    UNSUPPORTED_CURRENCY(ErrorCategory.UNPROCESSABLE, "unsupported_currency"),
     INVALID_MONEY(ErrorCategory.UNPROCESSABLE, "invalid_money"),
     CURRENCY_MISMATCH(ErrorCategory.UNPROCESSABLE, "currency_mismatch"),
     INVALID_CBU(ErrorCategory.BAD_REQUEST, "invalid_cbu"),
