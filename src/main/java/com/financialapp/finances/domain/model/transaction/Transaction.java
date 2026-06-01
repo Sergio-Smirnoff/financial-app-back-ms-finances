@@ -7,6 +7,7 @@ import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.event.DomainEvent;
 import com.financialapp.finances.domain.event.TransactionCreated;
+import com.financialapp.finances.domain.event.TransactionReversed;
 import com.financialapp.finances.domain.exception.transaction.SameAccountTransactionException;
 
 import java.math.BigDecimal;
@@ -113,6 +114,32 @@ public final class Transaction {
             domainEvents.add(new TransactionCreated(
                 id, movement.account(), movement.signedAmount(), movement.currency()));
         }
+    }
+
+    /**
+     * Record the undo of every balance movement this transaction caused (delete path). One
+     * {@link TransactionReversed} per movement, carrying the negated amount.
+     */
+    public void recordReversal(List<BalanceMovement> movements) {
+        if (id == null) {
+            throw new IllegalStateException(
+                "cannot record a reversal before the transaction is persisted");
+        }
+        for (BalanceMovement movement : movements) {
+            BalanceMovement undo = movement.reversed();
+            domainEvents.add(new TransactionReversed(
+                id, undo.account(), undo.signedAmount(), undo.currency()));
+        }
+    }
+
+    /**
+     * Record a money correction (edit path): undo the old movements then apply the new ones, so
+     * ms-banks nets the delta. {@link TransactionReversed} per old movement, {@link TransactionCreated}
+     * per new movement.
+     */
+    public void recordCorrection(List<BalanceMovement> oldMovements, List<BalanceMovement> newMovements) {
+        recordReversal(oldMovements);
+        recordCreationEvents(newMovements);
     }
 
     /** Return and clear the recorded domain events. */
