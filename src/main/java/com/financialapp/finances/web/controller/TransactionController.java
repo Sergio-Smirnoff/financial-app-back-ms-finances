@@ -91,7 +91,7 @@ public class TransactionController {
         if (accountCbu != null) {
             Cbu cbu = new Cbu(accountCbu);
             List<AccountTransactionResponse> rows = listAccountTransactions.execute(cbu, limit, from, to)
-                    .stream().map(t -> mapper.toAccountResponse(t, cbu)).toList();
+                    .stream().map(v -> mapper.toAccountResponse(v, cbu)).toList();
             return ResponseEntity.ok(ApiResponse.ok(rows));
         }
         List<TransactionResponse> rows = listUserTransactions.execute(new UserId(userId))

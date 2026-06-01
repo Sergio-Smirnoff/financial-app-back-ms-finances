@@ -4,22 +4,29 @@ import com.financialapp.finances.domain.common.model.CategoryId;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.category.Category;
 import com.financialapp.finances.domain.model.category.CategoryName;
+import com.financialapp.finances.domain.model.category.CategoryNames;
 import com.financialapp.finances.infrastructure.persistence.entity.CategoryJpaEntity;
 import com.financialapp.finances.infrastructure.persistence.jpa.CategoryJpaRepository;
 import com.financialapp.finances.infrastructure.persistence.mapper.CategoryPersistenceMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class CategoryRepositoryImplTest {
 
     private final CategoryJpaRepository jpa = mock(CategoryJpaRepository.class);
-    private final CategoryRepositoryImpl repo = new CategoryRepositoryImpl(jpa, new CategoryPersistenceMapper());
+    private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
+    private final CategoryRepositoryImpl repo =
+            new CategoryRepositoryImpl(jpa, new CategoryPersistenceMapper(), jdbc);
 
     @Test
     void findAllOwnedByMapsRootsWithChildren() {
@@ -38,6 +45,31 @@ class CategoryRepositoryImplTest {
     void findByIdOwnedByEmptyWhenAbsent() {
         when(jpa.findByIdAndUserIdAndParentIsNull(9L, 42L)).thenReturn(Optional.empty());
         assertThat(repo.findByIdOwnedBy(new CategoryId(9L), new UserId(42L))).isEmpty();
+    }
+
+    @Test
+    void findNamesByIdResolvesSubcategoryToParentAndOwnName() {
+        when(jdbc.queryForMap(anyString(), eq(5L)))
+                .thenReturn(Map.of("name", "Rent", "parent_name", "Housing"));
+        assertThat(repo.findNamesById(new CategoryId(5L)))
+                .contains(new CategoryNames("Housing", "Rent"));
+    }
+
+    @Test
+    void findNamesByIdResolvesRootToCategoryOnly() {
+        Map<String, Object> row = new HashMap<>();
+        row.put("name", "Housing");
+        row.put("parent_name", null);
+        when(jdbc.queryForMap(anyString(), eq(1L))).thenReturn(row);
+        assertThat(repo.findNamesById(new CategoryId(1L)))
+                .contains(new CategoryNames("Housing", null));
+    }
+
+    @Test
+    void findNamesByIdEmptyWhenUnknown() {
+        when(jdbc.queryForMap(anyString(), eq(99L)))
+                .thenThrow(new EmptyResultDataAccessException(1));
+        assertThat(repo.findNamesById(new CategoryId(99L))).isEmpty();
     }
 
     @Test

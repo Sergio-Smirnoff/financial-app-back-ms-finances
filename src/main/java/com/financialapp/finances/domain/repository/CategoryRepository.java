@@ -3,6 +3,7 @@ package com.financialapp.finances.domain.repository;
 import com.financialapp.finances.domain.common.model.CategoryId;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.category.Category;
+import com.financialapp.finances.domain.model.category.CategoryNames;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +21,10 @@ public interface CategoryRepository {
     Optional<Category> findByIdOwnedBy(CategoryId id, UserId userId);
 
     List<Category> findAllOwnedBy(UserId userId);
+
+    /**
+     * Resolve a category-or-subcategory id to display names for read views. Unscoped by owner:
+     * the ms-banks account view is a cross-owner callback with no userId. Empty if id is unknown.
+     */
+    Optional<CategoryNames> findNamesById(CategoryId id);
 }

@@ -6,6 +6,8 @@ import com.financialapp.finances.domain.model.transaction.ClassifiedTransaction;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
 import com.financialapp.finances.domain.model.transaction.TransactionSummary;
+import com.financialapp.finances.domain.model.category.CategoryNames;
+import com.financialapp.finances.domain.repository.CategoryRepository;
 import com.financialapp.finances.domain.repository.TransactionRepository;
 import com.financialapp.finances.domain.service.TransactionClassifier;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ class TransactionQueryUseCasesTest {
 
     private static final Currency ARS = Currency.getInstance("ARS");
     private final TransactionRepository repo = mock(TransactionRepository.class);
+    private final CategoryRepository categoryRepo = mock(CategoryRepository.class);
     private final AccountOwnershipGateway ownership = mock(AccountOwnershipGateway.class);
     private final TransactionClassifier classifier = new TransactionClassifier();
 
@@ -31,7 +34,7 @@ class TransactionQueryUseCasesTest {
     private final GetTransactionSummaryUseCaseImpl getSummary =
             new GetTransactionSummaryUseCaseImpl(repo, ownership, classifier);
     private final ListAccountTransactionsUseCaseImpl listAccount =
-            new ListAccountTransactionsUseCaseImpl(repo);
+            new ListAccountTransactionsUseCaseImpl(repo, categoryRepo);
 
     private final Cbu mine = new Cbu("0001112223334445556667");
     private final Cbu other = new Cbu("9998887776665554443332");
@@ -67,8 +70,24 @@ class TransactionQueryUseCasesTest {
     }
 
     @Test
-    void accountListReturnsAggregates() {
+    void accountListPairsEachTransactionWithResolvedNames() {
         when(repo.findByAccount(mine, 5, null, null)).thenReturn(List.of(tx(1, mine, other, "100.00")));
-        assertThat(listAccount.execute(mine, 5, null, null)).hasSize(1);
+        when(categoryRepo.findNamesById(new CategoryId(5L)))
+                .thenReturn(java.util.Optional.of(new CategoryNames("Housing", "Rent")));
+
+        var rows = listAccount.execute(mine, 5, null, null);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).transaction().id().value()).isEqualTo(1L);
+        assertThat(rows.get(0).names()).isEqualTo(new CategoryNames("Housing", "Rent"));
+    }
+
+    @Test
+    void accountListFallsBackToNullNamesWhenCategoryUnknown() {
+        when(repo.findByAccount(mine, 5, null, null)).thenReturn(List.of(tx(1, mine, other, "100.00")));
+        when(categoryRepo.findNamesById(new CategoryId(5L))).thenReturn(java.util.Optional.empty());
+
+        assertThat(listAccount.execute(mine, 5, null, null).get(0).names())
+                .isEqualTo(new CategoryNames(null, null));
     }
 }

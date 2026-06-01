@@ -1,19 +1,15 @@
 package com.financialapp.finances.web.mapper;
 
-import com.financialapp.finances.application.transaction.CategoryNameLookup;
 import com.financialapp.finances.domain.common.model.Cbu;
 import com.financialapp.finances.domain.model.transaction.ClassifiedTransaction;
 import com.financialapp.finances.domain.model.transaction.Transaction;
+import com.financialapp.finances.domain.usecase.transaction.AccountTransactionView;
 import com.financialapp.finances.web.dto.response.AccountTransactionResponse;
 import com.financialapp.finances.web.dto.response.TransactionResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class TransactionWebMapper {
-
-    private final CategoryNameLookup categoryNames;
 
     /** User view: magnitude amount + reified kind. */
     public TransactionResponse toUserResponse(ClassifiedTransaction ct) {
@@ -26,11 +22,11 @@ public class TransactionWebMapper {
     }
 
     /** Account view (ms-banks): amount signed for the queried account + resolved category names. */
-    public AccountTransactionResponse toAccountResponse(Transaction t, Cbu accountCbu) {
-        CategoryNameLookup.CategoryNames names = categoryNames.resolve(t.categoryId().value());
+    public AccountTransactionResponse toAccountResponse(AccountTransactionView v, Cbu accountCbu) {
+        Transaction t = v.transaction();
         return new AccountTransactionResponse(
                 t.id().value(), accountCbu.cbuNumber(),
                 t.signedFor(accountCbu), t.money().currency().getCurrencyCode(),
-                t.description(), names.category(), names.subcategory(), t.date());
+                t.description(), v.names().category(), v.names().subcategory(), t.date());
     }
 }
