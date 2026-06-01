@@ -3,7 +3,6 @@ package com.financialapp.finances.domain.model.transaction;
 import com.financialapp.finances.domain.common.model.Cbu;
 import com.financialapp.finances.domain.common.model.CategoryId;
 import com.financialapp.finances.domain.common.model.Money;
-import com.financialapp.finances.domain.common.model.SupportedCurrency;
 import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.exception.transaction.SameAccountTransactionException;
@@ -18,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TransactionTest {
 
-    private static final Currency ARS = SupportedCurrency.requireSupported("ARS");
+    private static final Currency ARS = Currency.getInstance("ARS");
     private static final UserId USER = new UserId(1L);
     private static final Cbu FROM = new Cbu("0".repeat(21) + "1");
     private static final Cbu TO = new Cbu("0".repeat(21) + "2");

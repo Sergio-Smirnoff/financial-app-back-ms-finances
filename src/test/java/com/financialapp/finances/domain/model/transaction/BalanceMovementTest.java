@@ -1,7 +1,6 @@
 package com.financialapp.finances.domain.model.transaction;
 
 import com.financialapp.finances.domain.common.model.Cbu;
-import com.financialapp.finances.domain.common.model.SupportedCurrency;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -12,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BalanceMovementTest {
 
-    private static final Currency ARS = SupportedCurrency.requireSupported("ARS");
+    private static final Currency ARS = Currency.getInstance("ARS");
     private static final Cbu ACCOUNT = new Cbu("0".repeat(21) + "1");
 
     @Test void holdsAccountSignedAmountAndCurrency() {

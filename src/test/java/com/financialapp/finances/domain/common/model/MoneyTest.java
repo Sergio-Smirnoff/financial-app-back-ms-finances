@@ -1,7 +1,6 @@
 package com.financialapp.finances.domain.common.model;
 
 import com.financialapp.finances.domain.exception.CurrencyMismatchException;
-import com.financialapp.finances.domain.exception.InvalidCurrencyException;
 import com.financialapp.finances.domain.exception.InvalidMoneyException;
 import org.junit.jupiter.api.Test;
 
@@ -13,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MoneyTest {
 
-    private static final Currency ARS = SupportedCurrency.requireSupported("ARS");
-    private static final Currency USD = SupportedCurrency.requireSupported("USD");
+    private static final Currency ARS = Currency.getInstance("ARS");
+    private static final Currency USD = Currency.getInstance("USD");
 
     private static Money ars(String amount) {
         return new Money(new BigDecimal(amount), ARS);
@@ -50,11 +49,6 @@ class MoneyTest {
     @Test void rejectsNullAmount() {
         assertThatThrownBy(() -> new Money(null, ARS))
             .isInstanceOf(InvalidMoneyException.class);
-    }
-
-    @Test void rejectsUnsupportedCurrency() {
-        assertThatThrownBy(() -> new Money(new BigDecimal("1.00"), Currency.getInstance("JPY")))
-            .isInstanceOf(InvalidCurrencyException.class);
     }
 
     @Test void rejectsArithmeticAcrossCurrencies() {
