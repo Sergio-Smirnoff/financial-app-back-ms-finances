@@ -1,6 +1,8 @@
 package com.financialapp.finances.infrastructure.messaging.listener;
 
 import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.finances.domain.exception.UnsupportedCurrencyException;
+import com.financialapp.finances.domain.gateway.SupportedCurrencies;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.repository.TransactionRepository;
 import com.financialapp.finances.infrastructure.messaging.payload.PaymentEvent;
@@ -12,9 +14,12 @@ import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Currency;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -24,8 +29,7 @@ class PaymentEventListenerTest {
     private final TransactionRepository repo = mock(TransactionRepository.class);
     private final ProcessedInboundEventJpaRepository processed = mock(ProcessedInboundEventJpaRepository.class);
     private final SystemCategoryResolver categories = mock(SystemCategoryResolver.class);
-    private final com.financialapp.finances.domain.gateway.SupportedCurrencies supportedCurrencies =
-            mock(com.financialapp.finances.domain.gateway.SupportedCurrencies.class);
+    private final SupportedCurrencies supportedCurrencies = mock(SupportedCurrencies.class);
     private final PaymentEventListener listener =
             new PaymentEventListener(repo, processed, categories, supportedCurrencies);
 
@@ -71,13 +75,13 @@ class PaymentEventListenerTest {
     @Test
     void rejectsUnsupportedCurrencyAndRecordsNothing() {
         when(processed.existsById(anyString())).thenReturn(false);
-        when(supportedCurrencies.isSupported(java.util.Currency.getInstance("JPY"))).thenReturn(false);
-        when(supportedCurrencies.all()).thenReturn(java.util.Set.of(java.util.Currency.getInstance("ARS")));
+        when(supportedCurrencies.isSupported(Currency.getInstance("JPY"))).thenReturn(false);
+        when(supportedCurrencies.all()).thenReturn(Set.of(Currency.getInstance("ARS")));
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+        assertThatThrownBy(() ->
                 listener.onPaymentEvent(new PaymentEvent(42L, "0001112223334445556667",
-                        new java.math.BigDecimal("100.00"), "JPY", "Loan Payment", java.time.LocalDate.of(2026, 6, 1))))
-                .isInstanceOf(com.financialapp.finances.domain.exception.UnsupportedCurrencyException.class);
+                        new BigDecimal("100.00"), "JPY", "Loan Payment", LocalDate.of(2026, 6, 1))))
+                .isInstanceOf(UnsupportedCurrencyException.class);
 
         verify(repo, never()).save(any());
     }

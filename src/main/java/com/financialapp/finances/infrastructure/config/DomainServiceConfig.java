@@ -1,5 +1,6 @@
 package com.financialapp.finances.infrastructure.config;
 
+import com.financialapp.finances.domain.service.TransactionClassifier;
 import com.financialapp.finances.domain.service.TransactionPosting;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +18,7 @@ public class DomainServiceConfig {
     }
 
     @Bean
-    public com.financialapp.finances.domain.service.TransactionClassifier transactionClassifier() {
-        return new com.financialapp.finances.domain.service.TransactionClassifier();
+    public TransactionClassifier transactionClassifier() {
+        return new TransactionClassifier();
     }
 }
