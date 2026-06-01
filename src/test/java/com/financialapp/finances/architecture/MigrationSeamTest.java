@@ -46,4 +46,25 @@ class MigrationSeamTest {
                 .allowEmptyShould(true)
                 .check(imported);
     }
+
+    @Test
+    void supportedCurrenciesPortIsFrameworkFree() {
+        noClasses()
+                .that().haveSimpleName("SupportedCurrencies")
+                .and().resideInAPackage("com.financialapp.finances.domain..")
+                .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..")
+                .allowEmptyShould(true)
+                .check(imported);
+    }
+
+    @Test
+    void supportedCurrenciesImplIsReferencedOnlyViaTheInterface() {
+        noClasses()
+                .that().resideInAPackage("com.financialapp.finances..")
+                .and().haveSimpleNameNotContaining("SupportedCurrenciesImpl")
+                .and().haveSimpleNameNotContaining("MessagingConfig")  // none reference the impl; guard stays true
+                .should().dependOnClassesThat().haveSimpleName("SupportedCurrenciesImpl")
+                .allowEmptyShould(true)
+                .check(imported);
+    }
 }
