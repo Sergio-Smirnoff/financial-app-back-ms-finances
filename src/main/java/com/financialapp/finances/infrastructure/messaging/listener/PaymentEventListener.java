@@ -56,7 +56,7 @@ public class PaymentEventListener {
         }
 
         Long categoryId = systemCategories
-                .findUnassignedCategoryId(income ? "INCOME" : "EXPENSE")
+                .findUnassignedCategoryId()
                 .orElseThrow(() -> new IllegalStateException("System 'Unassigned' category missing"));
 
         Transaction tx = Transaction.create(

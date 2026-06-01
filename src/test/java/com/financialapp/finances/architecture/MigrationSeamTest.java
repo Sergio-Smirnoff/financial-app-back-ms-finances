@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class MigrationSeamTest {
 
@@ -29,22 +30,11 @@ class MigrationSeamTest {
     }
 
     @Test
-    void legacyAndNewDomainDoNotEntangle() {
-        // The legacy code lives under the old/ directory but keeps the flat packages
-        // (com.financialapp.finances.{service,kafka,model,...}); guard both the directory-style
-        // "old" package and the new domain against importing each other. allowEmptyShould keeps
-        // the rule green while the legacy tree carries no "old"-prefixed package.
-        noClasses()
-                .that().resideInAPackage("com.financialapp.finances.old..")
-                .should().dependOnClassesThat().resideInAPackage("com.financialapp.finances.domain..")
-                .allowEmptyShould(true)
-                .check(imported);
-
-        noClasses()
-                .that().resideInAPackage("com.financialapp.finances.domain..")
-                .should().dependOnClassesThat().resideInAPackage("com.financialapp.finances.old..")
-                .allowEmptyShould(true)
-                .check(imported);
+    void noLegacyOldPackageRemains() {
+        // Slice 5 removed the legacy tree entirely. Guard that it never returns.
+        assertThat(imported)
+                .filteredOn(c -> c.getPackageName().startsWith("com.financialapp.finances.old"))
+                .isEmpty();
     }
 
     @Test

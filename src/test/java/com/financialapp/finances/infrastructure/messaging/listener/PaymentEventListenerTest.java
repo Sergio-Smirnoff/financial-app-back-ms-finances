@@ -42,7 +42,7 @@ class PaymentEventListenerTest {
     void recordsExpenseWithSentinelCounterpartyAndDoesNotEcho() {
         when(processed.existsById(anyString())).thenReturn(false);
         when(supportedCurrencies.isSupported(any())).thenReturn(true);
-        when(categories.findUnassignedCategoryId("EXPENSE")).thenReturn(Optional.of(900L));
+        when(categories.findUnassignedCategoryId()).thenReturn(Optional.of(900L));
         when(repo.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
         listener.onPaymentEvent(loanPayment());
@@ -60,7 +60,7 @@ class PaymentEventListenerTest {
     void incomeWhenDescriptionIndicatesADeposit() {
         when(processed.existsById(anyString())).thenReturn(false);
         when(supportedCurrencies.isSupported(any())).thenReturn(true);
-        when(categories.findUnassignedCategoryId("INCOME")).thenReturn(Optional.of(901L));
+        when(categories.findUnassignedCategoryId()).thenReturn(Optional.of(901L));
         when(repo.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
         listener.onPaymentEvent(new PaymentEvent(42L, "0001112223334445556667",
