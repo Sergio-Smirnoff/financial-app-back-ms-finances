@@ -19,6 +19,9 @@ public interface TransactionJpaRepository extends JpaRepository<TransactionJpaEn
 
     List<TransactionJpaEntity> findByUserIdOrderByDateDescIdDesc(Long userId);
 
+    List<TransactionJpaEntity> findByUserIdAndDateBetweenOrderByDateDescIdDesc(
+            Long userId, LocalDate from, LocalDate to);
+
     @Query("""
             SELECT t FROM TransactionJpaEntity t
             WHERE (t.fromCbu = :cbu OR t.toCbu = :cbu)

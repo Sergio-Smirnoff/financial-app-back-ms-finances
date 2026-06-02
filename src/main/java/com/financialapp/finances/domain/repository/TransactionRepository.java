@@ -23,6 +23,9 @@ public interface TransactionRepository {
     /** All of a user's transactions, newest first. */
     List<Transaction> findByUser(UserId userId);
 
+    /** A user's transactions within [from, to] inclusive, newest first. */
+    List<Transaction> findByUserAndDateBetween(UserId userId, LocalDate from, LocalDate to);
+
     /** Transactions touching one account (from OR to), newest first, optionally date-bounded/limited. */
     List<Transaction> findByAccount(Cbu accountCbu, Integer limit, LocalDate from, LocalDate to);
 

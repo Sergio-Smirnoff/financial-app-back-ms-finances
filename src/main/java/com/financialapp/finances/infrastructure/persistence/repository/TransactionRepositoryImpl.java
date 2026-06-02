@@ -42,6 +42,12 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
+    public List<Transaction> findByUserAndDateBetween(UserId userId, LocalDate from, LocalDate to) {
+        return jpa.findByUserIdAndDateBetweenOrderByDateDescIdDesc(userId.value(), from, to)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<Transaction> findByAccount(Cbu accountCbu, Integer limit, LocalDate from, LocalDate to) {
         Limit lim = limit == null ? Limit.unlimited() : Limit.of(limit);
         return jpa.findByAccount(accountCbu.cbuNumber(), from, to, lim)
