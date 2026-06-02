@@ -106,6 +106,59 @@ mvn spring-boot:run
 
 Make sure PostgreSQL is running and the `finances` schema exists (created by `infra/postgres/init/01-create-schemas.sql`).
 
+## Testing
+
+Tests live under two source roots (configured in `pom.xml`), run by different plugins:
+
+| Root | Plugin | Naming | Purpose |
+|---|---|---|---|
+| `src/test/unit/java` | Surefire | `*Test` | Fast, isolated unit tests. Collaborators may be mocked. |
+| `src/test/integration/java` | Failsafe | `*IT` | Boot the Spring context and exercise real wiring. |
+
+Coverage is gated at **100% line + branch per class** (JaCoCo `check`, merging unit + integration
+execution data). Genuinely unreachable defensive code is excluded explicitly in `pom.xml` with a
+note — never lower the threshold.
+
+### Integration tests MUST stub the downstream boundary with WireMock
+
+This replicates the strategy from TP1: the **only** thing an integration test stubs is the downstream
+HTTP boundary (ms-banks accounts), and it does so with **WireMock** — never `@MockBean` on a gateway
+or use case. Everything else runs for real: the full context boots, controllers are driven through
+`MockMvc` with real payloads, real use cases run against an in-memory H2 schema, and
+`BankAccountOwnershipGateway` reaches ms-banks over a real socket served by WireMock.
+
+Rules for any new integration test in this service:
+
+1. **Extend `WireMockIntegrationTest`** (`src/test/integration/.../support/`). It is the single IT
+   base: `@SpringBootTest` + `@AutoConfigureMockMvc`, `@ActiveProfiles("test")` (H2), an embedded
+   Kafka broker, and a **dynamic-port** WireMock server redirected via `banks.service.url`
+   (`DynamicPropertySource`) — the standard recipe (see the backend testing guideline §6.1). Because
+   more than one IT class extends this base, they share one cached context (identical inherited
+   `@DynamicPropertySource`), so the base is annotated `@DirtiesContext(AFTER_CLASS)` to evict it
+   between classes; otherwise the context would bake the first class's port and later classes would
+   hit a stopped server.
+2. **No `@MockBean` of gateways or use cases.** If a test needs ms-banks to behave a certain way,
+   stub it with WireMock, not Mockito.
+3. **Every controller endpoint is tested with a real payload and the response asserted** (status +
+   JSON body). Cover the success path and each error/branch path (validation, not-found, unsupported
+   currency, downstream failure).
+4. **Stub files** for the happy path live under `src/test/resources/wiremock/` (`mappings/` +
+   `__files/`), priority-ordered. Per-test failure scenarios (ms-banks 500, empty ownership, …) use a
+   higher-priority `wireMock.stubFor(...)` override inside the test; the extension resets overrides
+   between tests.
+5. The H2 schema is **shared across all IT classes** (cached context, `create-drop`, Flyway off, so
+   no seed data). Capture generated ids from responses rather than hardcoding them, seed via the API,
+   and isolate read-back assertions (e.g. use a dedicated account CBU) so cross-class rows don't
+   interfere.
+
+Run them:
+
+```bash
+mvn test                       # unit tests only (Surefire)
+mvn verify                     # unit + integration + coverage gate
+mvn verify -Dit.test=TransactionControllerIT -Dtest=NoneSuch -Dsurefire.failIfNoSpecifiedTests=false
+```
+
 ## Database Migrations
 
 Flyway runs automatically on startup. Migration files are in `src/main/resources/db/migration/`:

@@ -1,202 +1,183 @@
 package com.financialapp.finances.web.controller;
 
-import com.financialapp.finances.domain.common.model.*;
-import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
-import com.financialapp.finances.domain.model.transaction.Transaction;
-import com.financialapp.finances.domain.model.transaction.TransactionKind;
-import com.financialapp.finances.domain.model.transaction.TransactionSummary;
-import com.financialapp.finances.domain.service.TransactionClassifier;
-import com.financialapp.finances.domain.usecase.transaction.DeleteTransaction;
-import com.financialapp.finances.domain.usecase.transaction.GetTransactionSummary;
-import com.financialapp.finances.domain.usecase.transaction.ListAccountTransactions;
-import com.financialapp.finances.domain.usecase.transaction.ListUserTransactions;
-import com.financialapp.finances.domain.usecase.transaction.RecordTransaction;
-import com.financialapp.finances.domain.usecase.transaction.UpdateTransaction;
-import com.financialapp.finances.domain.model.category.CategoryNames;
-import com.financialapp.finances.domain.usecase.transaction.AccountTransactionView;
-import com.financialapp.finances.web.mapper.TransactionWebMapper;
+import com.financialapp.finances.support.WireMockIntegrationTest;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Currency;
-
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = TransactionController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@Import(TransactionWebMapper.class)
-class TransactionControllerIT {
+/**
+ * Full-stack integration tests for {@link TransactionController}. Every endpoint is driven with a
+ * real JSON payload and the response is asserted. Account ownership is resolved through the real
+ * Feign client against WireMock (TP1 strategy) — never mocked. The classpath stub
+ * ({@code wiremock/mappings/banks-accounts.json}) makes user 42 own ARS {@code 0001112223334445556667}
+ * and USD {@code 9998887776665554443332}; per-test {@code stubFor} overrides cover failures.
+ */
+class TransactionControllerIT extends WireMockIntegrationTest {
 
-    @Autowired MockMvc mvc;
-    @MockBean RecordTransaction recordTransaction;
-    @MockBean UpdateTransaction updateTransaction;
-    @MockBean DeleteTransaction deleteTransaction;
-    @MockBean ListUserTransactions listUserTransactions;
-    @MockBean GetTransactionSummary getTransactionSummary;
-    @MockBean ListAccountTransactions listAccountTransactions;
-    @MockBean TransactionClassifier classifier;
-    @MockBean AccountOwnershipGateway ownershipGateway;
-    @MockBean com.financialapp.finances.domain.gateway.SupportedCurrencies supportedCurrencies;
+    private static final String USER = "42";
+    private static final String OWNED_ARS = "0001112223334445556667";
+    private static final String EXTERNAL = "1111111111111111111111";
 
-    private static final Currency ARS = Currency.getInstance("ARS");
-
-    @org.junit.jupiter.api.BeforeEach
-    void supportAllCurrencies() {
-        when(supportedCurrencies.isSupported(any())).thenReturn(true);
+    /** Records a valid ARS expense (owned source, external destination) and returns its id. */
+    private long recordExpense(String amount, String description, String date) throws Exception {
+        String body = """
+                {"fromCbu":"%s","toCbu":"%s","amount":"%s","currency":"ARS","categoryId":5,"description":"%s","date":"%s"}
+                """.formatted(OWNED_ARS, EXTERNAL, amount, description, date);
+        MvcResult res = mvc.perform(post("/api/v1/finances/transactions")
+                        .header("X-User-Id", USER).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return ((Number) JsonPath.read(res.getResponse().getContentAsString(), "$.data.id")).longValue();
     }
 
     @Test
-    void accountScopedListReturnsMsBanksDtoShape() throws Exception {
-        Cbu mine = new Cbu("0001112223334445556667");
-        Transaction tx = Transaction.reconstitute(new TransactionId(77L), new UserId(42L),
-                mine, new Cbu("9998887776665554443332"),
-                new Money(new BigDecimal("100.00"), ARS), new CategoryId(5L), "Rent", LocalDate.of(2026, 6, 1));
-        when(listAccountTransactions.execute(eq(mine), any(), any(), any()))
-                .thenReturn(List.of(new AccountTransactionView(tx, new CategoryNames("Housing", "Rent"))));
+    void record_validExpense_returns201WithExpenseKind() throws Exception {
+        String body = """
+                {"fromCbu":"%s","toCbu":"%s","amount":"150.00","currency":"ARS","categoryId":5,"description":"Rent","date":"2026-06-01"}
+                """.formatted(OWNED_ARS, EXTERNAL);
 
-        mvc.perform(get("/api/v1/finances/transactions")
-                        .param("accountCbu", "0001112223334445556667"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].transactionId").value(77))
-                .andExpect(jsonPath("$.data[0].accountCbu").value("0001112223334445556667"))
-                .andExpect(jsonPath("$.data[0].amount").value("-100.00"))
-                .andExpect(jsonPath("$.data[0].category").value("Housing"))
-                .andExpect(jsonPath("$.data[0].subcategory").value("Rent"));
-    }
-
-    @Test
-    void summaryWithRangeReturnsPerCurrencyMap() throws Exception {
-        when(getTransactionSummary.execute(any(UserId.class), any(DateRange.class)))
-                .thenReturn(List.of(new TransactionSummary(ARS,
-                        new BigDecimal("100"), new BigDecimal("40"), new BigDecimal("60"))));
-
-        mvc.perform(get("/api/v1/finances/transactions/summary")
-                        .header("X-User-Id", 1L)
-                        .param("from", "2026-05-01").param("to", "2026-05-31"))
-                .andExpect(status().isOk())
+        mvc.perform(post("/api/v1/finances/transactions")
+                        .header("X-User-Id", USER).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.ARS.balance").value("60"));
+                .andExpect(jsonPath("$.data.id").exists())
+                .andExpect(jsonPath("$.data.fromCbu").value(OWNED_ARS))
+                .andExpect(jsonPath("$.data.toCbu").value(EXTERNAL))
+                .andExpect(jsonPath("$.data.amount").value("150.00"))
+                .andExpect(jsonPath("$.data.currency").value("ARS"))
+                .andExpect(jsonPath("$.data.kind").value("EXPENSE"))
+                .andExpect(jsonPath("$.data.description").value("Rent"));
     }
 
     @Test
-    void summaryWithOnlyOneBoundIsBadRequest() throws Exception {
-        mvc.perform(get("/api/v1/finances/transactions/summary")
-                        .header("X-User-Id", 1L)
-                        .param("from", "2026-05-01"))
+    void record_unsupportedCurrency_returns400() throws Exception {
+        String body = """
+                {"fromCbu":"%s","toCbu":"%s","amount":"10.00","currency":"GBP","categoryId":5,"description":"x","date":"2026-06-01"}
+                """.formatted(OWNED_ARS, EXTERNAL);
+
+        mvc.perform(post("/api/v1/finances/transactions")
+                        .header("X-User-Id", USER).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void record_touchesNoOwnedAccount_returns422() throws Exception {
+        // ms-banks reports the user owns nothing → neither side is owned.
+        wireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/api/v1/banks/accounts")).atPriority(1)
+                .willReturn(WireMock.okJson("{\"success\":true,\"message\":\"ok\",\"data\":[],\"errors\":null,\"timestamp\":\"2026-06-02T00:00:00Z\"}")));
+        String body = """
+                {"fromCbu":"%s","toCbu":"%s","amount":"10.00","currency":"ARS","categoryId":5,"description":"x","date":"2026-06-01"}
+                """.formatted(OWNED_ARS, EXTERNAL);
+
+        mvc.perform(post("/api/v1/finances/transactions")
+                        .header("X-User-Id", USER).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void record_downstreamBanksFailure_propagatesStatus() throws Exception {
+        wireMock.stubFor(WireMock.get(WireMock.urlPathEqualTo("/api/v1/banks/accounts")).atPriority(1)
+                .willReturn(WireMock.aResponse().withStatus(500)));
+        String body = """
+                {"fromCbu":"%s","toCbu":"%s","amount":"10.00","currency":"ARS","categoryId":5,"description":"x","date":"2026-06-01"}
+                """.formatted(OWNED_ARS, EXTERNAL);
+
+        mvc.perform(post("/api/v1/finances/transactions")
+                        .header("X-User-Id", USER).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Communication error between services"));
+    }
+
+    @Test
+    void update_changesDescription_returns200() throws Exception {
+        long id = recordExpense("20.00", "Before", "2026-06-01");
+
+        mvc.perform(put("/api/v1/finances/transactions/" + id)
+                        .header("X-User-Id", USER).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"After\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value((int) id))
+                .andExpect(jsonPath("$.data.description").value("After"));
+    }
+
+    @Test
+    void update_noEditableField_returns400() throws Exception {
+        long id = recordExpense("20.00", "x", "2026-06-01");
+
+        mvc.perform(put("/api/v1/finances/transactions/" + id)
+                        .header("X-User-Id", USER).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
     }
 
-    private Transaction savedTx() {
-        return Transaction.reconstitute(new TransactionId(77L), new UserId(42L),
-                new Cbu("0001112223334445556667"), new Cbu("9998887776665554443332"),
-                new Money(new BigDecimal("100.00"), ARS), new CategoryId(5L), "Rent", LocalDate.of(2026, 6, 1));
-    }
-
     @Test
-    void recordReturns201WithClassifiedTransaction() throws Exception {
-        when(recordTransaction.execute(any())).thenReturn(savedTx());
-        when(ownershipGateway.ownedAccounts(new UserId(42L)))
-                .thenReturn(java.util.Set.of(new Cbu("0001112223334445556667")));
-        when(classifier.classify(any(), any())).thenReturn(TransactionKind.EXPENSE);
+    void delete_removesTransaction_returns200() throws Exception {
+        long id = recordExpense("20.00", "ToDelete", "2026-06-01");
 
-        mvc.perform(post("/api/v1/finances/transactions").header("X-User-Id", "42")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fromCbu\":\"0001112223334445556667\",\"toCbu\":\"9998887776665554443332\","
-                                + "\"amount\":\"100.00\",\"currency\":\"ARS\",\"categoryId\":5,"
-                                + "\"description\":\"Rent\",\"date\":\"2026-06-01\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.id").value(77))
-                .andExpect(jsonPath("$.data.kind").value("EXPENSE"));
-    }
-
-    @Test
-    void updateReturnsClassifiedTransaction() throws Exception {
-        when(updateTransaction.execute(any())).thenReturn(savedTx());
-        when(ownershipGateway.ownedAccounts(new UserId(42L)))
-                .thenReturn(java.util.Set.of(new Cbu("9998887776665554443332")));
-        when(classifier.classify(any(), any())).thenReturn(TransactionKind.INCOME);
-
-        mvc.perform(put("/api/v1/finances/transactions/77").header("X-User-Id", "42")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"categoryId\":9,\"description\":\"Updated\",\"date\":\"2026-06-02\"}"))
+        mvc.perform(delete("/api/v1/finances/transactions/" + id).header("X-User-Id", USER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.kind").value("INCOME"));
+                .andExpect(jsonPath("$.message").value("Transaction deleted"));
     }
 
     @Test
-    void deleteReturnsSuccess() throws Exception {
-        mvc.perform(delete("/api/v1/finances/transactions/77").header("X-User-Id", "42"))
+    void list_byAccountCbu_returnsAccountView() throws Exception {
+        recordExpense("33.00", "AccountScoped", "2026-06-03");
+
+        mvc.perform(get("/api/v1/finances/transactions").param("accountCbu", OWNED_ARS))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-        verify(deleteTransaction).execute(any());
+                .andExpect(jsonPath("$.data", not(empty())))
+                .andExpect(jsonPath("$.data[0].accountCbu").value(OWNED_ARS))
+                .andExpect(jsonPath("$.data[0].transactionId").exists())
+                .andExpect(jsonPath("$.data[0].currency").exists());
     }
 
     @Test
-    void userScopedListReturnsUserTransactions() throws Exception {
-        when(listUserTransactions.execute(new UserId(42L)))
-                .thenReturn(List.of(new com.financialapp.finances.domain.model.transaction.ClassifiedTransaction(
-                        savedTx(), TransactionKind.EXPENSE)));
-        mvc.perform(get("/api/v1/finances/transactions").header("X-User-Id", "42"))
+    void list_byUser_returnsUserTransactions() throws Exception {
+        recordExpense("44.00", "UserScoped", "2026-06-04");
+
+        mvc.perform(get("/api/v1/finances/transactions").header("X-User-Id", USER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].id").value(77))
-                .andExpect(jsonPath("$.data[0].kind").value("EXPENSE"));
+                .andExpect(jsonPath("$.data", not(empty())));
     }
 
     @Test
-    void listWithoutUserOrAccountIsBadRequest() throws Exception {
-        // Neither accountCbu nor X-User-Id present -> ConstraintViolation -> 400
+    void list_withoutUserOrAccount_returns400() throws Exception {
         mvc.perform(get("/api/v1/finances/transactions"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void allTimeSummaryUsesNoDateRange() throws Exception {
-        when(getTransactionSummary.execute(any(UserId.class)))
-                .thenReturn(List.of(new TransactionSummary(ARS,
-                        new BigDecimal("100"), new BigDecimal("40"), new BigDecimal("60"))));
-        mvc.perform(get("/api/v1/finances/transactions/summary").header("X-User-Id", 1L))
+    void summary_withoutRange_returnsPerCurrencyTotals() throws Exception {
+        recordExpense("75.00", "Summed", "2026-06-05");
+
+        mvc.perform(get("/api/v1/finances/transactions/summary").header("X-User-Id", USER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.ARS.balance").value("60"));
+                .andExpect(jsonPath("$.data.ARS.totalIncome").exists())
+                .andExpect(jsonPath("$.data.ARS.totalExpense").exists())
+                .andExpect(jsonPath("$.data.ARS.balance").exists());
     }
 
     @Test
-    void summaryMergesDuplicateCurrencyKeepingFirst() throws Exception {
-        // Two summaries for the same currency exercise the toMap merge function (a, b) -> a.
-        when(getTransactionSummary.execute(any(UserId.class)))
-                .thenReturn(List.of(
-                        new TransactionSummary(ARS, new BigDecimal("100"), new BigDecimal("40"), new BigDecimal("60")),
-                        new TransactionSummary(ARS, new BigDecimal("1"), new BigDecimal("1"), new BigDecimal("0"))));
-        mvc.perform(get("/api/v1/finances/transactions/summary").header("X-User-Id", 1L))
+    void summary_withRange_returnsPerCurrencyTotals() throws Exception {
+        recordExpense("75.00", "RangedSum", "2026-06-06");
+
+        mvc.perform(get("/api/v1/finances/transactions/summary")
+                        .header("X-User-Id", USER).param("from", "2026-01-01").param("to", "2026-12-31"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.ARS.balance").value("60")); // first kept
+                .andExpect(jsonPath("$.data.ARS").exists());
     }
 
     @Test
-    void updateWithNullCategoryLeavesCategoryUnchanged() throws Exception {
-        when(updateTransaction.execute(any())).thenReturn(savedTx());
-        when(ownershipGateway.ownedAccounts(new UserId(42L)))
-                .thenReturn(java.util.Set.of(new Cbu("0001112223334445556667")));
-        when(classifier.classify(any(), any())).thenReturn(TransactionKind.EXPENSE);
-
-        // categoryId omitted (null) -> the `req.categoryId() != null ? ... : null` false branch
-        mvc.perform(put("/api/v1/finances/transactions/77").header("X-User-Id", "42")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"description\":\"Updated\",\"date\":\"2026-06-02\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.kind").value("EXPENSE"));
+    void summary_partialRange_returns400() throws Exception {
+        mvc.perform(get("/api/v1/finances/transactions/summary")
+                        .header("X-User-Id", USER).param("from", "2026-01-01"))
+                .andExpect(status().isBadRequest());
     }
 }

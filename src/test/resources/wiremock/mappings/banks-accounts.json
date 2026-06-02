@@ -1,11 +1,17 @@
 {
-  "request": {
-    "method": "GET",
-    "urlPath": "/api/v1/banks/accounts"
-  },
-  "response": {
-    "status": 200,
-    "headers": { "Content-Type": "application/json" },
-    "bodyFileName": "banks-accounts.json"
-  }
+  "mappings": [
+    {
+      "name": "banks_accounts_default",
+      "priority": 10,
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/v1/banks/accounts"
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "bodyFileName": "banks-accounts.json"
+      }
+    }
+  ]
 }
