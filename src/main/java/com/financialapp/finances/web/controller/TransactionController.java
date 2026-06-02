@@ -113,9 +113,18 @@ public class TransactionController {
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<Map<String, CurrencySummaryResponse>>> summary(
-            @RequestHeader("X-User-Id") Long userId) {
-        Map<String, CurrencySummaryResponse> byCurrency = getTransactionSummary.execute(new UserId(userId))
-                .stream().collect(Collectors.toMap(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if ((from == null) != (to == null)) {
+            throw new ConstraintViolationException("from and to must be provided together", Set.of());
+        }
+        UserId user = new UserId(userId);
+        var summaries = (from != null)
+                ? getTransactionSummary.execute(user, new DateRange(from, to))
+                : getTransactionSummary.execute(user);
+        Map<String, CurrencySummaryResponse> byCurrency = summaries.stream()
+                .collect(Collectors.toMap(
                         s -> s.currency().getCurrencyCode(),
                         s -> new CurrencySummaryResponse(s.totalIncome(), s.totalExpense(), s.balance()),
                         (a, b) -> a, LinkedHashMap::new));

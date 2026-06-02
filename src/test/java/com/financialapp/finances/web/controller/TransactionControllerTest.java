@@ -3,6 +3,7 @@ package com.financialapp.finances.web.controller;
 import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.transaction.Transaction;
+import com.financialapp.finances.domain.model.transaction.TransactionSummary;
 import com.financialapp.finances.domain.service.TransactionClassifier;
 import com.financialapp.finances.domain.usecase.transaction.DeleteTransaction;
 import com.financialapp.finances.domain.usecase.transaction.GetTransactionSummary;
@@ -65,5 +66,27 @@ class TransactionControllerTest {
                 .andExpect(jsonPath("$.data[0].amount").value(-100.00))
                 .andExpect(jsonPath("$.data[0].category").value("Housing"))
                 .andExpect(jsonPath("$.data[0].subcategory").value("Rent"));
+    }
+
+    @Test
+    void summaryWithRangeReturnsPerCurrencyMap() throws Exception {
+        when(getTransactionSummary.execute(any(UserId.class), any(DateRange.class)))
+                .thenReturn(List.of(new TransactionSummary(ARS,
+                        new BigDecimal("100"), new BigDecimal("40"), new BigDecimal("60"))));
+
+        mvc.perform(get("/api/v1/finances/transactions/summary")
+                        .header("X-User-Id", 1L)
+                        .param("from", "2026-05-01").param("to", "2026-05-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.ARS.balance").value(60));
+    }
+
+    @Test
+    void summaryWithOnlyOneBoundIsBadRequest() throws Exception {
+        mvc.perform(get("/api/v1/finances/transactions/summary")
+                        .header("X-User-Id", 1L)
+                        .param("from", "2026-05-01"))
+                .andExpect(status().isBadRequest());
     }
 }
