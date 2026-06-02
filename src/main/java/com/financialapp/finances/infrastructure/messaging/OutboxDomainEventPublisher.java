@@ -29,7 +29,7 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
     public void publish(DomainEvent event) {
         if (event instanceof TransactionCreated tc) {
             persist(String.valueOf(tc.sourceTransactionId().value()),
-                    rowId -> eventMapper.toWire(tc, rowId));
+                    rowId -> eventMapper.transactionToWire(tc, rowId));
             return;
         }
         if (event instanceof TransactionReversed tr) {

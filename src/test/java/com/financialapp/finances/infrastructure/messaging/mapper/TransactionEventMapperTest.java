@@ -21,7 +21,7 @@ class TransactionEventMapperTest {
                 new TransactionId(7L), new Cbu("0001112223334445556667"),
                 new BigDecimal("-1250.00"), Currency.getInstance("ARS"));
 
-        TransactionCreatedEvent wire = mapper.toWire(e, 9001L);
+        TransactionCreatedEvent wire = mapper.transactionToWire(e, 9001L);
 
         assertThat(wire.transactionId()).isEqualTo(9001L);   // outbox row id, NOT the tx id
         assertThat(wire.accountCbu()).isEqualTo("0001112223334445556667");

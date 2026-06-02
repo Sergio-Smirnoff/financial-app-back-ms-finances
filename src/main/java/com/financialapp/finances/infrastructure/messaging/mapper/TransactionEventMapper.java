@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class TransactionEventMapper {
 
     /** Render a balance movement to the wire shape. {@code outboxId} fills the idempotency field. */
-    public TransactionCreatedEvent toWire(TransactionCreated e, Long outboxId) {
+    public TransactionCreatedEvent transactionToWire(TransactionCreated e, Long outboxId) {
         return new TransactionCreatedEvent(
                 outboxId,
                 e.accountCbu().cbuNumber(),
