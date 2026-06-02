@@ -35,7 +35,7 @@ class TransactionWebMapperTest {
         assertThat(r.id()).isEqualTo(77L);
         assertThat(r.fromCbu()).isEqualTo("0001112223334445556667");
         assertThat(r.kind()).isEqualTo(TransactionKind.EXPENSE);
-        assertThat(r.amount()).isEqualByComparingTo("100.00");
+        assertThat(r.amount()).isEqualTo("100.00");
     }
 
     @Test
@@ -44,7 +44,7 @@ class TransactionWebMapperTest {
         AccountTransactionResponse r = mapper.toAccountResponse(view, mine);
         assertThat(r.transactionId()).isEqualTo(77L);
         assertThat(r.accountCbu()).isEqualTo("0001112223334445556667");
-        assertThat(r.amount()).isEqualByComparingTo("-100.00"); // signedFor(mine) = debit
+        assertThat(r.amount()).isEqualTo("-100.00"); // signedFor(mine) = debit
         assertThat(r.category()).isEqualTo("Housing");
         assertThat(r.subcategory()).isEqualTo("Rent");
     }

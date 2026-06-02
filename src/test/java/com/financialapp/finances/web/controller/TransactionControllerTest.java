@@ -63,7 +63,7 @@ class TransactionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].transactionId").value(77))
                 .andExpect(jsonPath("$.data[0].accountCbu").value("0001112223334445556667"))
-                .andExpect(jsonPath("$.data[0].amount").value(-100.00))
+                .andExpect(jsonPath("$.data[0].amount").value("-100.00"))
                 .andExpect(jsonPath("$.data[0].category").value("Housing"))
                 .andExpect(jsonPath("$.data[0].subcategory").value("Rent"));
     }
@@ -79,7 +79,7 @@ class TransactionControllerTest {
                         .param("from", "2026-05-01").param("to", "2026-05-31"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.ARS.balance").value(60));
+                .andExpect(jsonPath("$.data.ARS.balance").value("60"));
     }
 
     @Test

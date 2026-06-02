@@ -1,12 +1,10 @@
 package com.financialapp.finances.web.dto.response;
 
-import java.math.BigDecimal;
-
 /**
  * Per-currency totals in the summary response. The currency is the key of the enclosing map, so it
- * is not repeated here.
+ * is not repeated here. Money is a decimal String (no BigDecimal on the wire).
  */
 public record CurrencySummaryResponse(
-        BigDecimal totalIncome,
-        BigDecimal totalExpense,
-        BigDecimal balance) {}
+        String totalIncome,
+        String totalExpense,
+        String balance) {}

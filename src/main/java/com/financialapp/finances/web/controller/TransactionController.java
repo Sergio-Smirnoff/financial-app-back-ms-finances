@@ -13,7 +13,6 @@ import com.financialapp.finances.domain.usecase.transaction.ListUserTransactions
 import com.financialapp.finances.domain.usecase.transaction.RecordTransaction;
 import com.financialapp.finances.domain.usecase.transaction.UpdateTransaction;
 import com.financialapp.finances.domain.usecase.transaction.command.DeleteTransactionCommand;
-import com.financialapp.finances.domain.usecase.transaction.command.RecordTransactionCommand;
 import com.financialapp.finances.domain.usecase.transaction.command.UpdateTransactionCommand;
 import com.financialapp.finances.web.dto.request.RecordTransactionRequest;
 import com.financialapp.finances.web.dto.request.UpdateTransactionRequest;
@@ -32,7 +31,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.LocalDate;
-import java.util.Currency;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,10 +57,8 @@ public class TransactionController {
     public ResponseEntity<ApiResponse<TransactionResponse>> record(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody RecordTransactionRequest req) {
-        Transaction saved = recordTransaction.execute(new RecordTransactionCommand(
-                new UserId(userId), new Cbu(req.fromCbu()), new Cbu(req.toCbu()),
-                new Money(req.amount(), Currency.getInstance(req.currency())),
-                new CategoryId(req.categoryId()), req.description(), req.date()));
+        Transaction saved = recordTransaction.execute(
+                mapper.toRecordCommand(new UserId(userId), req));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Transaction recorded", toUser(saved, new UserId(userId))));
     }
@@ -126,7 +122,10 @@ public class TransactionController {
         Map<String, CurrencySummaryResponse> byCurrency = summaries.stream()
                 .collect(Collectors.toMap(
                         s -> s.currency().getCurrencyCode(),
-                        s -> new CurrencySummaryResponse(s.totalIncome(), s.totalExpense(), s.balance()),
+                        s -> new CurrencySummaryResponse(
+                                s.totalIncome().toPlainString(),
+                                s.totalExpense().toPlainString(),
+                                s.balance().toPlainString()),
                         (a, b) -> a, LinkedHashMap::new));
         return ResponseEntity.ok(ApiResponse.ok(byCurrency));
     }
