@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "message": "ok",
+  "data": [
+    { "cbu": "0001112223334445556667", "currency": "ARS" },
+    { "cbu": "9998887776665554443332", "currency": "USD" }
+  ],
+  "errors": null,
+  "timestamp": "2026-06-02T00:00:00Z"
+}
