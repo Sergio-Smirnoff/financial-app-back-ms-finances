@@ -19,6 +19,7 @@ public enum DomainErrorCode {
 
     // --- Transaction ---
     SAME_ACCOUNT_TRANSACTION(ErrorCategory.BAD_REQUEST, "same_account_transaction"),
+    ACCOUNT_CURRENCY_MISMATCH(ErrorCategory.BAD_REQUEST, "account_currency_mismatch"),
     TRANSACTION_NOT_OWNED(ErrorCategory.UNPROCESSABLE, "transaction_not_owned");
 
     private final ErrorCategory category;

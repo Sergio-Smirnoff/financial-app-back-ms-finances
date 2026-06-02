@@ -22,8 +22,8 @@ public interface TransactionJpaRepository extends JpaRepository<TransactionJpaEn
     @Query("""
             SELECT t FROM TransactionJpaEntity t
             WHERE (t.fromCbu = :cbu OR t.toCbu = :cbu)
-              AND (:from IS NULL OR t.date >= :from)
-              AND (:to   IS NULL OR t.date <= :to)
+              AND (CAST(:from AS date) IS NULL OR t.date >= :from)
+              AND (CAST(:to   AS date) IS NULL OR t.date <= :to)
             ORDER BY t.date DESC, t.id DESC
             """)
     List<TransactionJpaEntity> findByAccount(@Param("cbu") String cbu,

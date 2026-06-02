@@ -15,6 +15,7 @@ import com.financialapp.finances.web.dto.response.ApiResponse;
 import com.financialapp.finances.web.dto.response.CategoryResponse;
 import com.financialapp.finances.web.dto.response.SubcategoryResponse;
 import com.financialapp.finances.web.mapper.CategoryWebMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Category")
 @RestController
 @RequestMapping("/api/v1/finances/categories")
 @RequiredArgsConstructor

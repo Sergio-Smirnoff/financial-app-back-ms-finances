@@ -1,10 +1,15 @@
 package com.financialapp.finances.domain.model.transaction;
 
 import java.math.BigDecimal;
+import java.util.Currency;
 
-/** User finance summary (single currency; multi-currency totals are out of scope for now). */
+/**
+ * Income/expense/balance totals for a single currency. Totals are never summed across currencies
+ * (that would require FX conversion); a user with movements in several currencies has one
+ * {@code TransactionSummary} per currency. {@code balance} is always {@code totalIncome - totalExpense}.
+ */
 public record TransactionSummary(
-        String currency,
+        Currency currency,
         BigDecimal totalIncome,
         BigDecimal totalExpense,
         BigDecimal balance) {}

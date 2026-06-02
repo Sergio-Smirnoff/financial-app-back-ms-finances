@@ -14,6 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Currency;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -26,20 +30,34 @@ public class GetTransactionSummaryUseCaseImpl implements GetTransactionSummary {
 
     @Override
     @Transactional(readOnly = true)
-    public TransactionSummary execute(UserId userId) {
+    public List<TransactionSummary> execute(UserId userId) {
         Set<Cbu> owned = ownershipGateway.ownedAccounts(userId);
-        BigDecimal income = BigDecimal.ZERO;
-        BigDecimal expense = BigDecimal.ZERO;
-        String currency = null;
+        Map<Currency, Totals> byCurrency = new LinkedHashMap<>();
         for (Transaction tx : transactionRepository.findByUser(userId)) {
             TransactionKind kind = classifier.classify(tx, owned);
-            currency = tx.money().currency().getCurrencyCode();
+            byCurrency.computeIfAbsent(tx.money().currency(), c -> new Totals())
+                    .add(kind, tx.money().amount());
+        }
+        return byCurrency.entrySet().stream()
+                .map(e -> e.getValue().toSummary(e.getKey()))
+                .toList();
+    }
+
+    /** Mutable per-currency accumulator; transfers (neither income nor expense) are ignored. */
+    private static final class Totals {
+        private BigDecimal income = BigDecimal.ZERO;
+        private BigDecimal expense = BigDecimal.ZERO;
+
+        void add(TransactionKind kind, BigDecimal amount) {
             if (kind == TransactionKind.EXPENSE) {
-                expense = expense.add(tx.money().amount());
+                expense = expense.add(amount);
             } else if (kind == TransactionKind.INCOME) {
-                income = income.add(tx.money().amount());
+                income = income.add(amount);
             }
         }
-        return new TransactionSummary(currency, income, expense, income.subtract(expense));
+
+        TransactionSummary toSummary(Currency currency) {
+            return new TransactionSummary(currency, income, expense, income.subtract(expense));
+        }
     }
 }

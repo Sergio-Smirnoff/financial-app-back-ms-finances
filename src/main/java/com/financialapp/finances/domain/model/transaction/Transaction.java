@@ -73,9 +73,11 @@ public final class Transaction {
                 userId, fromCbu, toCbu, money, categoryId, description, date);
     }
 
-    /** Edit money/category/description/date; identity and the two accounts are frozen. */
-    public Transaction changeDetails(Money money, CategoryId categoryId, String description,
-                                     LocalDate date) {
+    /**
+     * Edit category/description/date. Identity, the two accounts and the money (amount + currency)
+     * are frozen, so an edit never moves an account balance and records no balance events.
+     */
+    public Transaction changeDetails(CategoryId categoryId, String description, LocalDate date) {
         return new Transaction(id, userId, fromCbu, toCbu, money, categoryId, description, date);
     }
 
@@ -130,16 +132,6 @@ public final class Transaction {
             domainEvents.add(new TransactionReversed(
                 id, undo.account(), undo.signedAmount(), undo.currency()));
         }
-    }
-
-    /**
-     * Record a money correction (edit path): undo the old movements then apply the new ones, so
-     * ms-banks nets the delta. {@link TransactionReversed} per old movement, {@link TransactionCreated}
-     * per new movement.
-     */
-    public void recordCorrection(List<BalanceMovement> oldMovements, List<BalanceMovement> newMovements) {
-        recordReversal(oldMovements);
-        recordCreationEvents(newMovements);
     }
 
     /** Return and clear the recorded domain events. */

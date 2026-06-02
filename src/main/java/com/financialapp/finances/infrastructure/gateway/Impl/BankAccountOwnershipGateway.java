@@ -1,6 +1,7 @@
 package com.financialapp.finances.infrastructure.gateway.Impl;
 
 import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.finances.domain.common.model.OwnedAccount;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.infrastructure.gateway.BanksAccountsFeignClient;
@@ -9,6 +10,7 @@ import com.financialapp.finances.infrastructure.gateway.dto.GatewayApiResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Currency;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +19,7 @@ import java.util.stream.Collectors;
 @Component
 public class BankAccountOwnershipGateway implements AccountOwnershipGateway {
 
-    private record CacheEntry(Set<Cbu> cbus, long expiresAt) {}
+    private record CacheEntry(Set<OwnedAccount> accounts, long expiresAt) {}
 
     private final BanksAccountsFeignClient feign;
     private final long ttlMillis;
@@ -31,23 +33,32 @@ public class BankAccountOwnershipGateway implements AccountOwnershipGateway {
     }
 
     @Override
-    public Set<Cbu> ownedAccounts(UserId userId) {
+    public Set<OwnedAccount> ownedAccountsWithCurrency(UserId userId) {
         long now = System.currentTimeMillis();
         CacheEntry cached = cache.get(userId.value());
         if (cached != null && cached.expiresAt() > now) {
-            return cached.cbus();
+            return cached.accounts();
         }
-        Set<Cbu> cbus = fetch(userId);
-        cache.put(userId.value(), new CacheEntry(cbus, now + ttlMillis));
-        return cbus;
+        Set<OwnedAccount> accounts = fetch(userId);
+        cache.put(userId.value(), new CacheEntry(accounts, now + ttlMillis));
+        return accounts;
     }
 
-    private Set<Cbu> fetch(UserId userId) {
+    @Override
+    public Set<Cbu> ownedAccounts(UserId userId) {
+        return ownedAccountsWithCurrency(userId).stream()
+                .map(OwnedAccount::cbu)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Set<OwnedAccount> fetch(UserId userId) {
         GatewayApiResponse<List<BankAccountResponse>> response = feign.listAccounts(userId.value());
         List<BankAccountResponse> data = response == null ? null : response.data();
         if (data == null) {
             return Set.of();
         }
-        return data.stream().map(a -> new Cbu(a.cbu())).collect(Collectors.toUnmodifiableSet());
+        return data.stream()
+                .map(a -> new OwnedAccount(new Cbu(a.cbu()), Currency.getInstance(a.currency())))
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

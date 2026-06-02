@@ -3,11 +3,13 @@ package com.financialapp.finances.application.transaction.impl;
 import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.event.DomainEvent;
 import com.financialapp.finances.domain.event.TransactionCreated;
+import com.financialapp.finances.domain.exception.transaction.AccountCurrencyMismatchException;
 import com.financialapp.finances.domain.exception.transaction.UnownedTransactionException;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.gateway.DomainEventPublisher;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.repository.TransactionRepository;
+import com.financialapp.finances.domain.service.TransactionCurrencyValidator;
 import com.financialapp.finances.domain.service.TransactionPosting;
 import com.financialapp.finances.domain.usecase.transaction.command.RecordTransactionCommand;
 import org.junit.jupiter.api.Test;
@@ -26,11 +28,12 @@ import static org.mockito.Mockito.*;
 class RecordTransactionUseCaseImplTest {
 
     private static final Currency ARS = Currency.getInstance("ARS");
+    private static final Currency USD = Currency.getInstance("USD");
     private final TransactionRepository repo = mock(TransactionRepository.class);
     private final AccountOwnershipGateway ownership = mock(AccountOwnershipGateway.class);
     private final DomainEventPublisher publisher = mock(DomainEventPublisher.class);
-    private final RecordTransactionUseCaseImpl useCase =
-            new RecordTransactionUseCaseImpl(repo, ownership, new TransactionPosting(), publisher);
+    private final RecordTransactionUseCaseImpl useCase = new RecordTransactionUseCaseImpl(
+            repo, ownership, new TransactionPosting(), new TransactionCurrencyValidator(), publisher);
 
     private final Cbu mine = new Cbu("0001112223334445556667");
     private final Cbu other = new Cbu("9998887776665554443332");
@@ -51,7 +54,8 @@ class RecordTransactionUseCaseImplTest {
 
     @Test
     void expenseEmitsOneBalanceEvent() {
-        when(ownership.ownedAccounts(new UserId(42L))).thenReturn(Set.of(mine));
+        when(ownership.ownedAccountsWithCurrency(new UserId(42L)))
+                .thenReturn(Set.of(new OwnedAccount(mine, ARS)));
         echoSaveWithId(77L);
 
         useCase.execute(cmd(mine, other));   // from owned, to external => expense
@@ -67,7 +71,8 @@ class RecordTransactionUseCaseImplTest {
 
     @Test
     void transferBetweenOwnedAccountsEmitsTwoBalanceEvents() {
-        when(ownership.ownedAccounts(new UserId(42L))).thenReturn(Set.of(mine, other));
+        when(ownership.ownedAccountsWithCurrency(new UserId(42L)))
+                .thenReturn(Set.of(new OwnedAccount(mine, ARS), new OwnedAccount(other, ARS)));
         echoSaveWithId(77L);
 
         useCase.execute(cmd(mine, other));   // both owned => transfer
@@ -80,12 +85,37 @@ class RecordTransactionUseCaseImplTest {
 
     @Test
     void noneOwnedThrowsAndNeitherSavesNorPublishes() {
-        when(ownership.ownedAccounts(new UserId(42L))).thenReturn(Set.of());
+        when(ownership.ownedAccountsWithCurrency(new UserId(42L))).thenReturn(Set.of());
 
         assertThatThrownBy(() -> useCase.execute(cmd(mine, other)))
                 .isInstanceOf(UnownedTransactionException.class);
 
         verify(repo, never()).save(any());
         verify(publisher, never()).publishAll(any());
+    }
+
+    @Test
+    void ownedSideInDifferentCurrencyIsRejectedBeforePersisting() {
+        // owned account is USD, transaction is ARS
+        when(ownership.ownedAccountsWithCurrency(new UserId(42L)))
+                .thenReturn(Set.of(new OwnedAccount(mine, USD)));
+
+        assertThatThrownBy(() -> useCase.execute(cmd(mine, other)))
+                .isInstanceOf(AccountCurrencyMismatchException.class);
+
+        verify(repo, never()).save(any());
+        verify(publisher, never()).publishAll(any());
+    }
+
+    @Test
+    void externalCounterpartyCurrencyIsNotChecked() {
+        // user owns the destination (ARS, matches); the source is external and not validated
+        when(ownership.ownedAccountsWithCurrency(new UserId(42L)))
+                .thenReturn(Set.of(new OwnedAccount(other, ARS)));
+        echoSaveWithId(77L);
+
+        useCase.execute(cmd(mine, other));   // to=other owned ARS, from=mine external
+
+        verify(publisher).publishAll(any());
     }
 }

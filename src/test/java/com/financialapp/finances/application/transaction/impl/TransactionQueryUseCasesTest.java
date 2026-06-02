@@ -40,8 +40,12 @@ class TransactionQueryUseCasesTest {
     private final Cbu other = new Cbu("9998887776665554443332");
 
     private Transaction tx(long id, Cbu from, Cbu to, String amount) {
+        return txIn(id, from, to, amount, ARS);
+    }
+
+    private Transaction txIn(long id, Cbu from, Cbu to, String amount, Currency currency) {
         return Transaction.reconstitute(new TransactionId(id), new UserId(42L), from, to,
-                new Money(new BigDecimal(amount), ARS), new CategoryId(5L), "x", LocalDate.of(2026, 6, 1));
+                new Money(new BigDecimal(amount), currency), new CategoryId(5L), "x", LocalDate.of(2026, 6, 1));
     }
 
     @Test
@@ -62,11 +66,35 @@ class TransactionQueryUseCasesTest {
                 tx(1, mine, other, "100.00"),   // expense (owns source)
                 tx(2, other, mine, "30.00")));  // income  (owns destination)
 
-        TransactionSummary summary = getSummary.execute(new UserId(42L));
+        List<TransactionSummary> summaries = getSummary.execute(new UserId(42L));
 
+        assertThat(summaries).hasSize(1);
+        TransactionSummary summary = summaries.get(0);
+        assertThat(summary.currency()).isEqualTo(ARS);
         assertThat(summary.totalExpense()).isEqualByComparingTo("100.00");
         assertThat(summary.totalIncome()).isEqualByComparingTo("30.00");
         assertThat(summary.balance()).isEqualByComparingTo("-70.00");
+    }
+
+    @Test
+    void summaryKeepsEachCurrencySeparateNeverSummingAcrossThem() {
+        Currency usd = Currency.getInstance("USD");
+        when(ownership.ownedAccounts(new UserId(42L))).thenReturn(Set.of(mine));
+        when(repo.findByUser(new UserId(42L))).thenReturn(List.of(
+                txIn(1, other, mine, "1000.00", ARS),   // income ARS
+                txIn(2, other, mine, "100.00", usd)));  // income USD
+
+        List<TransactionSummary> summaries = getSummary.execute(new UserId(42L));
+
+        assertThat(summaries).hasSize(2);
+        TransactionSummary ars = summaries.stream()
+                .filter(s -> s.currency().equals(ARS)).findFirst().orElseThrow();
+        TransactionSummary usdSummary = summaries.stream()
+                .filter(s -> s.currency().equals(usd)).findFirst().orElseThrow();
+        assertThat(ars.totalIncome()).isEqualByComparingTo("1000.00");
+        assertThat(ars.balance()).isEqualByComparingTo("1000.00");
+        assertThat(usdSummary.totalIncome()).isEqualByComparingTo("100.00");
+        assertThat(usdSummary.balance()).isEqualByComparingTo("100.00");
     }
 
     @Test

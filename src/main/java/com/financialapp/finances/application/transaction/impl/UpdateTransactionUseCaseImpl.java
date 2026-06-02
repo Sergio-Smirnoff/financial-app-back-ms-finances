@@ -1,30 +1,24 @@
 package com.financialapp.finances.application.transaction.impl;
 
-import com.financialapp.finances.domain.common.model.Cbu;
-import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
-import com.financialapp.finances.domain.gateway.DomainEventPublisher;
-import com.financialapp.finances.domain.model.transaction.BalanceMovement;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.repository.TransactionRepository;
-import com.financialapp.finances.domain.service.TransactionPosting;
 import com.financialapp.finances.domain.usecase.transaction.UpdateTransaction;
 import com.financialapp.finances.domain.usecase.transaction.command.UpdateTransactionCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
-
 @Service
 @RequiredArgsConstructor
 public class UpdateTransactionUseCaseImpl implements UpdateTransaction {
 
     private final TransactionRepository transactionRepository;
-    private final AccountOwnershipGateway ownershipGateway;
-    private final TransactionPosting transactionPosting;
-    private final DomainEventPublisher domainEventPublisher;
 
+    /**
+     * Apply a partial edit to category/description/date. Amount, currency and the two accounts are
+     * frozen, so the balance never moves and no ms-banks events are emitted. A {@code null} field on
+     * the command leaves the existing value unchanged.
+     */
     @Override
     @Transactional
     public Transaction execute(UpdateTransactionCommand command) {
@@ -33,16 +27,11 @@ public class UpdateTransactionUseCaseImpl implements UpdateTransaction {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "transaction " + command.id().value() + " not found for user"));
 
-        Set<Cbu> owned = ownershipGateway.ownedAccounts(command.userId());
-        List<BalanceMovement> oldMovements = transactionPosting.post(existing, owned);
-
         Transaction updated = existing.changeDetails(
-                command.money(), command.categoryId(), command.description(), command.date());
-        List<BalanceMovement> newMovements = transactionPosting.post(updated, owned);
+                command.categoryId() != null ? command.categoryId() : existing.categoryId(),
+                command.description() != null ? command.description() : existing.description(),
+                command.date() != null ? command.date() : existing.date());
 
-        Transaction saved = transactionRepository.save(updated);
-        saved.recordCorrection(oldMovements, newMovements);
-        domainEventPublisher.publishAll(saved.pullDomainEvents());
-        return saved;
+        return transactionRepository.save(updated);
     }
 }

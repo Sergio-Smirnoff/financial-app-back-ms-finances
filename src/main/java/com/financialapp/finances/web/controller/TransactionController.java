@@ -5,7 +5,6 @@ import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.transaction.ClassifiedTransaction;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
-import com.financialapp.finances.domain.model.transaction.TransactionSummary;
 import com.financialapp.finances.domain.service.TransactionClassifier;
 import com.financialapp.finances.domain.usecase.transaction.DeleteTransaction;
 import com.financialapp.finances.domain.usecase.transaction.GetTransactionSummary;
@@ -20,19 +19,27 @@ import com.financialapp.finances.web.dto.request.RecordTransactionRequest;
 import com.financialapp.finances.web.dto.request.UpdateTransactionRequest;
 import com.financialapp.finances.web.dto.response.AccountTransactionResponse;
 import com.financialapp.finances.web.dto.response.ApiResponse;
+import com.financialapp.finances.web.dto.response.CurrencySummaryResponse;
 import com.financialapp.finances.web.dto.response.TransactionResponse;
-import com.financialapp.finances.web.dto.response.TransactionSummaryResponse;
 import com.financialapp.finances.web.mapper.TransactionWebMapper;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+@Tag(name = "Transaction")
 @RestController
 @RequestMapping("/api/v1/finances/transactions")
 @RequiredArgsConstructor
@@ -67,8 +74,8 @@ public class TransactionController {
             @Valid @RequestBody UpdateTransactionRequest req) {
         Transaction saved = updateTransaction.execute(new UpdateTransactionCommand(
                 new UserId(userId), new TransactionId(id),
-                new Money(req.amount(), Currency.getInstance(req.currency())),
-                new CategoryId(req.categoryId()), req.description(), req.date()));
+                req.categoryId() != null ? new CategoryId(req.categoryId()) : null,
+                req.description(), req.date()));
         return ResponseEntity.ok(ApiResponse.ok("Transaction updated", toUser(saved, new UserId(userId))));
     }
 
@@ -86,13 +93,18 @@ public class TransactionController {
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(value = "accountCbu", required = false) String accountCbu,
             @RequestParam(value = "limit", required = false) Integer limit,
-            @RequestParam(value = "from", required = false) LocalDate from,
-            @RequestParam(value = "to", required = false) LocalDate to) {
+            @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        // Account-scoped listing is the internal ms-banks callback (no user context).
         if (accountCbu != null) {
             Cbu cbu = new Cbu(accountCbu);
             List<AccountTransactionResponse> rows = listAccountTransactions.execute(cbu, limit, from, to)
                     .stream().map(v -> mapper.toAccountResponse(v, cbu)).toList();
             return ResponseEntity.ok(ApiResponse.ok(rows));
+        }
+        // User-scoped listing requires the gateway-injected X-User-Id header.
+        if (userId == null) {
+            throw new ConstraintViolationException("X-User-Id header is required", Set.of());
         }
         List<TransactionResponse> rows = listUserTransactions.execute(new UserId(userId))
                 .stream().map(mapper::toUserResponse).toList();
@@ -100,11 +112,14 @@ public class TransactionController {
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<ApiResponse<TransactionSummaryResponse>> summary(
+    public ResponseEntity<ApiResponse<Map<String, CurrencySummaryResponse>>> summary(
             @RequestHeader("X-User-Id") Long userId) {
-        TransactionSummary s = getTransactionSummary.execute(new UserId(userId));
-        return ResponseEntity.ok(ApiResponse.ok(new TransactionSummaryResponse(
-                s.currency(), s.totalIncome(), s.totalExpense(), s.balance())));
+        Map<String, CurrencySummaryResponse> byCurrency = getTransactionSummary.execute(new UserId(userId))
+                .stream().collect(Collectors.toMap(
+                        s -> s.currency().getCurrencyCode(),
+                        s -> new CurrencySummaryResponse(s.totalIncome(), s.totalExpense(), s.balance()),
+                        (a, b) -> a, LinkedHashMap::new));
+        return ResponseEntity.ok(ApiResponse.ok(byCurrency));
     }
 
     /** Classify the just-saved aggregate via the domain classifier + ownership gateway (no re-list). */

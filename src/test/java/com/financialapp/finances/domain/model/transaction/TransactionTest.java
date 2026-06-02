@@ -78,16 +78,16 @@ class TransactionTest {
         assertThat(t.involves(new Cbu("9".repeat(22)))).isFalse();
     }
 
-    @Test void changeDetailsUpdatesEditableFieldsAndPreservesIdentity() {
+    @Test void changeDetailsUpdatesEditableFieldsAndFreezesMoneyAndIdentity() {
         Transaction persisted = Transaction.reconstitute(
             new TransactionId(7L), USER, FROM, TO, ars("100.00"), CATEGORY, "old", DATE);
         Transaction updated = persisted.changeDetails(
-            ars("250.00"), new CategoryId(20L), "new", DATE.plusDays(1));
+            new CategoryId(20L), "new", DATE.plusDays(1));
         assertThat(updated.id()).isEqualTo(new TransactionId(7L));
         assertThat(updated.userId()).isEqualTo(USER);
         assertThat(updated.fromCbu()).isEqualTo(FROM);
         assertThat(updated.toCbu()).isEqualTo(TO);
-        assertThat(updated.money()).isEqualTo(ars("250.00"));
+        assertThat(updated.money()).isEqualTo(ars("100.00")); // money is frozen
         assertThat(updated.categoryId()).isEqualTo(new CategoryId(20L));
         assertThat(updated.description()).isEqualTo("new");
         assertThat(updated.date()).isEqualTo(DATE.plusDays(1));
