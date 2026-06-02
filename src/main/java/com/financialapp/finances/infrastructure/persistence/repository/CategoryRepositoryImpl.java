@@ -66,7 +66,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         CategoryJpaEntity root = (category.id() == null)
                 ? mapper.newRootEntity(category)
                 : loadRoot(category.id().value());
-        root.setName(category.name().value());
+        root.setName(category.name().text());
         root.setActive(category.status() == CategoryStatus.ACTIVE);
         root.setUserId(category.userId().value());
         root.setChildren(reconcileChildren(category, root));
@@ -89,7 +89,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             CategoryJpaEntity child = subcategory.id() == null
                     ? mapper.newChildEntity(subcategory, category.userId().value())
                     : existing.get(subcategory.id().value());
-            child.setName(subcategory.name().value());
+            child.setName(subcategory.name().text());
             child.setActive(subcategory.status() == CategoryStatus.ACTIVE);
             child.setParent(root);
             result.add(child);

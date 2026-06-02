@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CategoryNameTest {
 
     @Test void trimsValue() {
-        assertThat(new CategoryName("  Food  ").value()).isEqualTo("Food");
+        assertThat(new CategoryName("  Food  ").text()).isEqualTo("Food");
     }
 
     @Test void hasValueEquality() {

@@ -8,17 +8,17 @@ import com.financialapp.finances.domain.exception.category.InvalidCategoryNameEx
  * record's compact constructor — and names gain value-equality. Specialised name VOs live with
  * their aggregate (cf. the banks {@code BankName}).
  */
-public record CategoryName(String value) {
+public record CategoryName(String text) {
 
-    private static final int MAX_LENGTH = 100;
+    private static final int MAX_NAME_LENGTH = 100;
 
     public CategoryName {
-        if (value == null || value.isBlank()) {
-            throw new InvalidCategoryNameException(value);
+        if (text == null || text.isBlank()) {
+            throw new InvalidCategoryNameException(text);
         }
-        value = value.trim();
-        if (value.length() > MAX_LENGTH) {
-            throw new InvalidCategoryNameException(value);
+        text = text.trim();
+        if (text.length() > MAX_NAME_LENGTH) {
+            throw new InvalidCategoryNameException(text);
         }
     }
 }

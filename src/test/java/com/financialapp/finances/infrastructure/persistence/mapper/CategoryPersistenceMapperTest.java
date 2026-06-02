@@ -29,9 +29,9 @@ class CategoryPersistenceMapperTest {
         Category c = mapper.toDomain(root);
 
         assertThat(c.id().value()).isEqualTo(1L);
-        assertThat(c.name().value()).isEqualTo("Food");
+        assertThat(c.name().text()).isEqualTo("Food");
         assertThat(c.status()).isEqualTo(CategoryStatus.ACTIVE);
-        assertThat(c.subcategories()).extracting(s -> s.name().value()).containsExactly("Groceries", "Old");
+        assertThat(c.subcategories()).extracting(s -> s.name().text()).containsExactly("Groceries", "Old");
         assertThat(c.subcategories().get(1).status()).isEqualTo(CategoryStatus.ARCHIVED);
     }
 

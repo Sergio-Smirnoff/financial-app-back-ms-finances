@@ -36,6 +36,14 @@ public final class Subcategory {
         return new Subcategory(id, name, CategoryStatus.ARCHIVED);
     }
 
+    Subcategory rename(CategoryName newName) {
+        return new Subcategory(id, newName, status);
+    }
+
+    Subcategory restore() {
+        return new Subcategory(id, name, CategoryStatus.ACTIVE);
+    }
+
     public CategoryId id() { return id; }
     public CategoryName name() { return name; }
     public CategoryStatus status() { return status; }

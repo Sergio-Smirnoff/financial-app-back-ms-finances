@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.HexFormat;
+import java.util.Set;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
@@ -30,6 +31,9 @@ import java.security.MessageDigest;
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentEventListener {
+
+    /** Description keywords that mark an inbound payment as income; anything else is an expense. */
+    static final Set<String> INCOME_KEYWORDS = Set.of("deposit", "received", "ingreso");
 
     private final TransactionRepository transactionRepository;
     private final ProcessedInboundEventJpaRepository processedEvents;
@@ -74,7 +78,7 @@ public class PaymentEventListener {
     private boolean isIncome(String description) {
         if (description == null) return false;           // default: expense
         String d = description.toLowerCase();
-        return d.contains("deposit") || d.contains("received") || d.contains("ingreso");
+        return INCOME_KEYWORDS.stream().anyMatch(d::contains);
     }
 
     /** Deterministic key over the event fields (payment-events carries no native id). */

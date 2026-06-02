@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 public class CategoryWebMapper {
 
     public CategoryResponse toCategoryResponse(Category category) {
-        return new CategoryResponse(category.id().value(), category.name().value());
+        return new CategoryResponse(category.id().value(), category.name().text());
     }
 
     public SubcategoryResponse toSubcategoryResponse(Subcategory subcategory) {
-        return new SubcategoryResponse(subcategory.id().value(), subcategory.name().value());
+        return new SubcategoryResponse(subcategory.id().value(), subcategory.name().text());
     }
 }

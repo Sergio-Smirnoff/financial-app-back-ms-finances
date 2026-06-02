@@ -36,7 +36,7 @@ class CategoryWriteUseCasesTest {
         create.execute(new CreateCategoryCommand(new UserId(42L), new CategoryName("Food")));
         ArgumentCaptor<Category> cap = ArgumentCaptor.forClass(Category.class);
         verify(repo).save(cap.capture());
-        assertThat(cap.getValue().name().value()).isEqualTo("Food");
+        assertThat(cap.getValue().name().text()).isEqualTo("Food");
         assertThat(cap.getValue().status()).isEqualTo(CategoryStatus.ACTIVE);
         assertThat(cap.getValue().id()).isNull();
     }
@@ -48,7 +48,7 @@ class CategoryWriteUseCasesTest {
         update.execute(new UpdateCategoryCommand(new UserId(42L), new CategoryId(1L), new CategoryName("Eating out")));
         ArgumentCaptor<Category> cap = ArgumentCaptor.forClass(Category.class);
         verify(repo).save(cap.capture());
-        assertThat(cap.getValue().name().value()).isEqualTo("Eating out");
+        assertThat(cap.getValue().name().text()).isEqualTo("Eating out");
     }
 
     @Test

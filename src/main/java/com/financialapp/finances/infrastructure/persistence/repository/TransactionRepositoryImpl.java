@@ -51,7 +51,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     @Override
     public boolean existsDuplicate(UserId userId, Cbu fromCbu, Cbu toCbu,
                                    BigDecimal amount, String currency, LocalDate date, String description) {
-        return jpa.existsByUserIdAndFromCbuAndToCbuAndAmountAndCurrencyAndDateAndDescription(
+        return jpa.existsDuplicate(
                 userId.value(), fromCbu.cbuNumber(), toCbu.cbuNumber(), amount, currency, date, description);
     }
 

@@ -78,6 +78,40 @@ public final class Category {
         return new Category(id, userId, name, status, updated);
     }
 
+    public Category renameSubcategory(CategoryId subId, CategoryName newName) {
+        List<Subcategory> updated = new ArrayList<>(subcategories.size());
+        boolean found = false;
+        for (Subcategory sub : subcategories) {
+            if (Objects.equals(sub.id(), subId)) {
+                updated.add(sub.rename(newName));
+                found = true;
+            } else {
+                updated.add(sub);
+            }
+        }
+        if (!found) {
+            throw new SubcategoryNotInCategoryException(id, subId);
+        }
+        return new Category(id, userId, name, status, updated);
+    }
+
+    public Category restoreSubcategory(CategoryId subId) {
+        List<Subcategory> updated = new ArrayList<>(subcategories.size());
+        boolean found = false;
+        for (Subcategory sub : subcategories) {
+            if (Objects.equals(sub.id(), subId)) {
+                updated.add(sub.restore());
+                found = true;
+            } else {
+                updated.add(sub);
+            }
+        }
+        if (!found) {
+            throw new SubcategoryNotInCategoryException(id, subId);
+        }
+        return new Category(id, userId, name, status, updated);
+    }
+
     public CategoryId id() { return id; }
     public UserId userId() { return userId; }
     public CategoryName name() { return name; }

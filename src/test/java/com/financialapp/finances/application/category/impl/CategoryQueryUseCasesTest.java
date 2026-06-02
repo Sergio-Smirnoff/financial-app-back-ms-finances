@@ -36,14 +36,14 @@ class CategoryQueryUseCasesTest {
 
         List<Category> result = listCategories.execute(new UserId(42L));
 
-        assertThat(result).extracting(c -> c.name().value()).containsExactly("Food");
+        assertThat(result).extracting(c -> c.name().text()).containsExactly("Food");
     }
 
     @Test
     void getReturnsCategoryOrThrows() {
         when(repo.findByIdOwnedBy(new CategoryId(1L), new UserId(42L)))
                 .thenReturn(Optional.of(active(1L, "Food", List.of())));
-        assertThat(getCategory.execute(new CategoryId(1L), new UserId(42L)).name().value()).isEqualTo("Food");
+        assertThat(getCategory.execute(new CategoryId(1L), new UserId(42L)).name().text()).isEqualTo("Food");
 
         when(repo.findByIdOwnedBy(new CategoryId(9L), new UserId(42L))).thenReturn(Optional.empty());
         assertThatThrownBy(() -> getCategory.execute(new CategoryId(9L), new UserId(42L)))
@@ -59,6 +59,6 @@ class CategoryQueryUseCasesTest {
 
         List<Subcategory> result = listSubcategories.execute(new CategoryId(1L), new UserId(42L));
 
-        assertThat(result).extracting(s -> s.name().value()).containsExactly("Groceries");
+        assertThat(result).extracting(s -> s.name().text()).containsExactly("Groceries");
     }
 }

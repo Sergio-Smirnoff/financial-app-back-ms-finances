@@ -37,7 +37,7 @@ class SubcategoryWriteUseCasesTest {
         createSub.execute(new CreateSubcategoryCommand(new UserId(42L), new CategoryId(1L), new CategoryName("Groceries")));
         ArgumentCaptor<Category> cap = ArgumentCaptor.forClass(Category.class);
         verify(repo).save(cap.capture());
-        assertThat(cap.getValue().subcategories()).extracting(s -> s.name().value()).containsExactly("Groceries");
+        assertThat(cap.getValue().subcategories()).extracting(s -> s.name().text()).containsExactly("Groceries");
     }
 
     @Test

@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Persistence port for the {@link Category} aggregate. Implemented in the infrastructure layer in a
- * later slice. Returns fully reconstituted aggregates; "tree"/"flat" presentation shaping is a
+ * Persistence port for the {@link Category} aggregate. Implemented in the infrastructure layer.
+ * Returns fully reconstituted aggregates; "tree"/"flat" presentation shaping is a
  * read-side query concern, not part of this port. Visibility is ownership — there are no global
  * categories, so a category is visible to a user iff that user owns it.
  */

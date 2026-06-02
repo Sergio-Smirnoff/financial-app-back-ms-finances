@@ -31,7 +31,21 @@ public interface TransactionJpaRepository extends JpaRepository<TransactionJpaEn
                                              @Param("to") LocalDate to,
                                              Limit limit);
 
-    boolean existsByUserIdAndFromCbuAndToCbuAndAmountAndCurrencyAndDateAndDescription(
-            Long userId, String fromCbu, String toCbu,
-            BigDecimal amount, String currency, LocalDate date, String description);
+    @Query("""
+            SELECT COUNT(t) > 0 FROM TransactionJpaEntity t
+            WHERE t.userId = :userId
+              AND t.fromCbu = :fromCbu
+              AND t.toCbu = :toCbu
+              AND t.amount = :amount
+              AND t.currency = :currency
+              AND t.date = :date
+              AND t.description = :description
+            """)
+    boolean existsDuplicate(@Param("userId") Long userId,
+                            @Param("fromCbu") String fromCbu,
+                            @Param("toCbu") String toCbu,
+                            @Param("amount") BigDecimal amount,
+                            @Param("currency") String currency,
+                            @Param("date") LocalDate date,
+                            @Param("description") String description);
 }

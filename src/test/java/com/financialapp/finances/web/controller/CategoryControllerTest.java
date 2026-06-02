@@ -5,6 +5,7 @@ import com.financialapp.finances.domain.common.model.CategoryStatus;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.category.Category;
 import com.financialapp.finances.domain.model.category.CategoryName;
+import com.financialapp.finances.domain.model.category.Subcategory;
 import com.financialapp.finances.domain.usecase.category.*;
 import com.financialapp.finances.web.mapper.CategoryWebMapper;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,8 @@ class CategoryControllerTest {
     @MockBean RestoreCategory restoreCategory;
     @MockBean CreateSubcategory createSubcategory;
     @MockBean ArchiveSubcategory archiveSubcategory;
+    @MockBean RenameSubcategory renameSubcategory;
+    @MockBean RestoreSubcategory restoreSubcategory;
 
     private Category food() {
         return Category.reconstitute(new CategoryId(1L), new UserId(42L),
@@ -74,5 +77,37 @@ class CategoryControllerTest {
         mvc.perform(delete("/api/v1/finances/categories/1").header("X-User-Id", "42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+    }
+
+    private Category foodWithSubcategory(CategoryStatus subStatus) {
+        return Category.reconstitute(new CategoryId(10L), new UserId(42L),
+                new CategoryName("Food"), CategoryStatus.ACTIVE,
+                List.of(Subcategory.reconstitute(new CategoryId(11L), new CategoryName("Dining"), subStatus)));
+    }
+
+    @Test
+    void renameSubcategoryReturnsRenamedSubcategory() throws Exception {
+        when(renameSubcategory.execute(any())).thenReturn(foodWithSubcategory(CategoryStatus.ACTIVE));
+        mvc.perform(put("/api/v1/finances/categories/10/subcategories/11").header("X-User-Id", "42")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Dining\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(11))
+                .andExpect(jsonPath("$.data.name").value("Dining"));
+    }
+
+    @Test
+    void renameSubcategoryWithBlankNameReturns400() throws Exception {
+        mvc.perform(put("/api/v1/finances/categories/10/subcategories/11").header("X-User-Id", "42")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void restoreSubcategoryReturnsActiveSubcategory() throws Exception {
+        when(restoreSubcategory.execute(any())).thenReturn(foodWithSubcategory(CategoryStatus.ACTIVE));
+        mvc.perform(post("/api/v1/finances/categories/10/subcategories/11/restore").header("X-User-Id", "42"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(11))
+                .andExpect(jsonPath("$.data.name").value("Dining"));
     }
 }

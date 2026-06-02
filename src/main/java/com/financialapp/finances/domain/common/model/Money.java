@@ -10,7 +10,7 @@ import java.util.Currency;
 /**
  * A positive monetary magnitude in a single {@link Currency}. {@code amount} is always
  * greater than zero — direction (expense / income / transfer) is not carried by Money; it is
- * derived per account from transaction ownership (see {@code Transaction.signedFor}, slice 3).
+ * derived per account from transaction ownership (see {@code Transaction.signedFor}).
  * The amount is normalised to scale 2 (HALF_EVEN). Any JDK-known {@link Currency} is accepted;
  * the supported-currency whitelist is enforced at the boundary, not here (see
  * {@code SupportedCurrencies}). Every invariant is enforced in the canonical constructor so no

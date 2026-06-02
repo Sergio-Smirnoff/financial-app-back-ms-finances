@@ -38,7 +38,7 @@ class CategoryRepositoryImplTest {
         List<Category> result = repo.findAllOwnedBy(new UserId(42L));
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).subcategories()).extracting(s -> s.name().value()).containsExactly("Groceries");
+        assertThat(result.get(0).subcategories()).extracting(s -> s.name().text()).containsExactly("Groceries");
     }
 
     @Test

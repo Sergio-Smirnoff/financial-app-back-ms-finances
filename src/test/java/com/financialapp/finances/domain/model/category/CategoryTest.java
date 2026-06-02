@@ -60,4 +60,34 @@ class CategoryTest {
         assertThatThrownBy(() -> persisted.archiveSubcategory(new CategoryId(99L)))
             .isInstanceOf(SubcategoryNotInCategoryException.class);
     }
+
+    @Test void renamesSubcategoryById() {
+        Category persisted = Category.reconstitute(
+            new CategoryId(10L), USER, FOOD, CategoryStatus.ACTIVE,
+            List.of(Subcategory.reconstitute(new CategoryId(11L), RESTAURANTS, CategoryStatus.ACTIVE)));
+        Category result = persisted.renameSubcategory(new CategoryId(11L), new CategoryName("Dining"));
+        assertThat(result.subcategories().get(0).name()).isEqualTo(new CategoryName("Dining"));
+    }
+
+    @Test void restoresArchivedSubcategoryById() {
+        Category persisted = Category.reconstitute(
+            new CategoryId(10L), USER, FOOD, CategoryStatus.ACTIVE,
+            List.of(Subcategory.reconstitute(new CategoryId(11L), RESTAURANTS, CategoryStatus.ARCHIVED)));
+        Category result = persisted.restoreSubcategory(new CategoryId(11L));
+        assertThat(result.subcategories().get(0).status()).isEqualTo(CategoryStatus.ACTIVE);
+    }
+
+    @Test void rejectsRenameOfUnknownSubcategory() {
+        Category persisted = Category.reconstitute(
+            new CategoryId(10L), USER, FOOD, CategoryStatus.ACTIVE, List.of());
+        assertThatThrownBy(() -> persisted.renameSubcategory(new CategoryId(99L), new CategoryName("X")))
+            .isInstanceOf(SubcategoryNotInCategoryException.class);
+    }
+
+    @Test void rejectsRestoreOfUnknownSubcategory() {
+        Category persisted = Category.reconstitute(
+            new CategoryId(10L), USER, FOOD, CategoryStatus.ACTIVE, List.of());
+        assertThatThrownBy(() -> persisted.restoreSubcategory(new CategoryId(99L)))
+            .isInstanceOf(SubcategoryNotInCategoryException.class);
+    }
 }

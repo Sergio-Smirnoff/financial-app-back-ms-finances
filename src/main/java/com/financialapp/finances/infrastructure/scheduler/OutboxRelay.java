@@ -27,16 +27,16 @@ public class OutboxRelay {
 
     private final OutboxEventJpaRepository outboxRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper eventPayloadMapper;
     private final int batchSize;
 
     public OutboxRelay(OutboxEventJpaRepository outboxRepository,
                        KafkaTemplate<String, Object> kafkaTemplate,
-                       ObjectMapper objectMapper,
+                       ObjectMapper eventPayloadMapper,
                        @Value("${finances.outbox.batch-size:100}") int batchSize) {
         this.outboxRepository = outboxRepository;
         this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = objectMapper;
+        this.eventPayloadMapper = eventPayloadMapper;
         this.batchSize = batchSize;
     }
 
@@ -48,7 +48,7 @@ public class OutboxRelay {
         for (OutboxEventJpaEntity row : batch) {
             try {
                 TransactionCreatedEvent payload =
-                        objectMapper.readValue(row.getPayload(), TransactionCreatedEvent.class);
+                        eventPayloadMapper.readValue(row.getPayload(), TransactionCreatedEvent.class);
                 kafkaTemplate.send(row.getTopic(), row.getAggregateKey(), payload);
                 row.setSent(true);
                 row.setSentAt(LocalDateTime.now());

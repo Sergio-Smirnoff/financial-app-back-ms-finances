@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * Resolves the id of the single system 'Unassigned' category that the ledger stamps on
  * auto-created transactions. Uses {@link JdbcTemplate} so it needs no managed entity for the
- * categories table. Since slice 5 there is one Unassigned category (no per-direction split).
+ * categories table. There is one Unassigned category (no per-direction split).
  */
 @Component
 @RequiredArgsConstructor

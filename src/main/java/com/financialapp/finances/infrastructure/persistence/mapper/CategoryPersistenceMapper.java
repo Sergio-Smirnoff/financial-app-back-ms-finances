@@ -30,7 +30,7 @@ public class CategoryPersistenceMapper {
     public CategoryJpaEntity newRootEntity(Category category) {
         return CategoryJpaEntity.builder()
                 .userId(category.userId().value())
-                .name(category.name().value())
+                .name(category.name().text())
                 .active(category.status() == CategoryStatus.ACTIVE)
                 .build();
     }
@@ -38,7 +38,7 @@ public class CategoryPersistenceMapper {
     public CategoryJpaEntity newChildEntity(Subcategory subcategory, Long userId) {
         return CategoryJpaEntity.builder()
                 .userId(userId)
-                .name(subcategory.name().value())
+                .name(subcategory.name().text())
                 .active(subcategory.status() == CategoryStatus.ACTIVE)
                 .build();
     }

@@ -9,6 +9,7 @@ import com.financialapp.finances.domain.usecase.category.*;
 import com.financialapp.finances.domain.usecase.category.command.*;
 import com.financialapp.finances.web.dto.request.CreateCategoryRequest;
 import com.financialapp.finances.web.dto.request.CreateSubcategoryRequest;
+import com.financialapp.finances.web.dto.request.RenameSubcategoryRequest;
 import com.financialapp.finances.web.dto.request.UpdateCategoryRequest;
 import com.financialapp.finances.web.dto.response.ApiResponse;
 import com.financialapp.finances.web.dto.response.CategoryResponse;
@@ -36,6 +37,8 @@ public class CategoryController {
     private final RestoreCategory restoreCategory;
     private final CreateSubcategory createSubcategory;
     private final ArchiveSubcategory archiveSubcategory;
+    private final RenameSubcategory renameSubcategory;
+    private final RestoreSubcategory restoreSubcategory;
     private final CategoryWebMapper mapper;
 
     @GetMapping
@@ -109,5 +112,31 @@ public class CategoryController {
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id, @PathVariable Long subId) {
         archiveSubcategory.execute(new ArchiveSubcategoryCommand(new UserId(userId), new CategoryId(id), new CategoryId(subId)));
         return ResponseEntity.ok(ApiResponse.<Void>builder().success(true).message("Subcategory archived").build());
+    }
+
+    @PutMapping("/{id}/subcategories/{subId}")
+    public ResponseEntity<ApiResponse<SubcategoryResponse>> renameSubcategoryIn(
+            @RequestHeader("X-User-Id") Long userId, @PathVariable Long id, @PathVariable Long subId,
+            @Valid @RequestBody RenameSubcategoryRequest req) {
+        Category saved = renameSubcategory.execute(new RenameSubcategoryCommand(
+                new UserId(userId), new CategoryId(id), new CategoryId(subId), new CategoryName(req.name())));
+        return ResponseEntity.ok(ApiResponse.ok("Subcategory renamed",
+                mapper.toSubcategoryResponse(subcategoryOf(saved, subId))));
+    }
+
+    @PostMapping("/{id}/subcategories/{subId}/restore")
+    public ResponseEntity<ApiResponse<SubcategoryResponse>> restoreSubcategoryIn(
+            @RequestHeader("X-User-Id") Long userId, @PathVariable Long id, @PathVariable Long subId) {
+        Category saved = restoreSubcategory.execute(new RestoreSubcategoryCommand(
+                new UserId(userId), new CategoryId(id), new CategoryId(subId)));
+        return ResponseEntity.ok(ApiResponse.ok("Subcategory restored",
+                mapper.toSubcategoryResponse(subcategoryOf(saved, subId))));
+    }
+
+    private Subcategory subcategoryOf(Category saved, Long subId) {
+        return saved.subcategories().stream()
+                .filter(s -> s.id().value().equals(subId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("subcategory " + subId + " missing after save"));
     }
 }

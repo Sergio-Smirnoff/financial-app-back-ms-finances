@@ -94,4 +94,10 @@ class PaymentEventListenerTest {
 
         verify(repo, never()).save(any());
     }
+
+    @Test
+    void incomeKeywordsAreTheExpectedSet() {
+        assertThat(PaymentEventListener.INCOME_KEYWORDS)
+                .containsExactlyInAnyOrder("deposit", "received", "ingreso");
+    }
 }

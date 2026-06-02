@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * One signed balance adjustment to a single owned account, derived by {@code TransactionPosting}.
- * Positive credits the account, negative debits it; never zero. Slice 4 turns each movement into
+ * Positive credits the account, negative debits it; never zero. Each movement becomes
  * a balance-event on the wire to ms-banks.
  */
 public record BalanceMovement(Cbu account, BigDecimal signedAmount, Currency currency) {
