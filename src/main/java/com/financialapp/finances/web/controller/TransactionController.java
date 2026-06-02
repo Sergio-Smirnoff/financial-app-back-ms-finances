@@ -133,6 +133,6 @@ public class TransactionController {
     /** Classify the just-saved aggregate via the domain classifier + ownership gateway (no re-list). */
     private TransactionResponse toUser(Transaction saved, UserId userId) {
         TransactionKind kind = classifier.classify(saved, ownershipGateway.ownedAccounts(userId));
-        return mapper.toUserResponse(new ClassifiedTransaction(saved, kind));
+        return mapper.toUserResponse(new ClassifiedTransaction(saved, kind), null);
     }
 }

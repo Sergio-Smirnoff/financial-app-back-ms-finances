@@ -12,5 +12,6 @@ public record TransactionResponse(
         String currency,
         TransactionKind kind,
         Long categoryId,
+        String categoryName,
         String description,
         LocalDate date) {}

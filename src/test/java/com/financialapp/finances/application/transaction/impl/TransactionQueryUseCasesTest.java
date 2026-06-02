@@ -30,7 +30,7 @@ class TransactionQueryUseCasesTest {
     private final TransactionClassifier classifier = new TransactionClassifier();
 
     private final ListUserTransactionsUseCaseImpl listUser =
-            new ListUserTransactionsUseCaseImpl(repo, ownership, classifier);
+            new ListUserTransactionsUseCaseImpl(repo, ownership, classifier, categoryRepo);
     private final GetTransactionSummaryUseCaseImpl getSummary =
             new GetTransactionSummaryUseCaseImpl(repo, ownership, classifier);
     private final ListAccountTransactionsUseCaseImpl listAccount =
@@ -53,10 +53,10 @@ class TransactionQueryUseCasesTest {
         when(ownership.ownedAccounts(new UserId(42L))).thenReturn(Set.of(mine));
         when(repo.findByUser(new UserId(42L))).thenReturn(List.of(tx(1, mine, other, "100.00")));
 
-        List<ClassifiedTransaction> rows = listUser.execute(new UserId(42L));
+        var rows = listUser.execute(new UserId(42L));
 
         assertThat(rows).hasSize(1);
-        assertThat(rows.get(0).kind()).isEqualTo(TransactionKind.EXPENSE);
+        assertThat(rows.get(0).classified().kind()).isEqualTo(TransactionKind.EXPENSE);
     }
 
     @Test

@@ -1,11 +1,10 @@
 package com.financialapp.finances.domain.usecase.transaction;
 
 import com.financialapp.finances.domain.common.model.UserId;
-import com.financialapp.finances.domain.model.transaction.ClassifiedTransaction;
 
 import java.util.List;
 
-/** A user's transactions, each paired with its owned-set-derived kind. */
+/** A user's transactions, each paired with its owned-set-derived kind and resolved category names. */
 public interface ListUserTransactions {
-    List<ClassifiedTransaction> execute(UserId userId);
+    List<UserTransactionView> execute(UserId userId);
 }

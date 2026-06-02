@@ -31,11 +31,12 @@ class TransactionWebMapperTest {
 
     @Test
     void userViewCarriesKindAndMagnitude() {
-        TransactionResponse r = mapper.toUserResponse(new ClassifiedTransaction(tx(), TransactionKind.EXPENSE));
+        TransactionResponse r = mapper.toUserResponse(new ClassifiedTransaction(tx(), TransactionKind.EXPENSE), "Rent");
         assertThat(r.id()).isEqualTo(77L);
         assertThat(r.fromCbu()).isEqualTo("0001112223334445556667");
         assertThat(r.kind()).isEqualTo(TransactionKind.EXPENSE);
         assertThat(r.amount()).isEqualTo("100.00");
+        assertThat(r.categoryName()).isEqualTo("Rent");
     }
 
     @Test
