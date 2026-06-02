@@ -1,6 +1,7 @@
 package com.financialapp.finances.application.transaction.impl;
 
 import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.finances.domain.common.model.DateRange;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.transaction.Transaction;
@@ -31,9 +32,20 @@ public class GetTransactionSummaryUseCaseImpl implements GetTransactionSummary {
     @Override
     @Transactional(readOnly = true)
     public List<TransactionSummary> execute(UserId userId) {
+        return summarize(userId, transactionRepository.findByUser(userId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TransactionSummary> execute(UserId userId, DateRange range) {
+        return summarize(userId,
+                transactionRepository.findByUserAndDateBetween(userId, range.from(), range.to()));
+    }
+
+    private List<TransactionSummary> summarize(UserId userId, List<Transaction> transactions) {
         Set<Cbu> owned = ownershipGateway.ownedAccounts(userId);
         Map<Currency, Totals> byCurrency = new LinkedHashMap<>();
-        for (Transaction tx : transactionRepository.findByUser(userId)) {
+        for (Transaction tx : transactions) {
             TransactionKind kind = classifier.classify(tx, owned);
             byCurrency.computeIfAbsent(tx.money().currency(), c -> new Totals())
                     .add(kind, tx.money().amount());
