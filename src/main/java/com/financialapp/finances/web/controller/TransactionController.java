@@ -17,7 +17,9 @@ import com.financialapp.finances.domain.usecase.transaction.command.UpdateTransa
 import com.financialapp.finances.web.dto.request.RecordTransactionRequest;
 import com.financialapp.finances.web.dto.request.UpdateTransactionRequest;
 import com.financialapp.finances.web.dto.response.AccountTransactionResponse;
-import com.financialapp.finances.web.dto.response.ApiResponse;
+import com.financialapp.commons.core.response.ApiResponse;
+import com.financialapp.commons.web.openapi.ApiErrorCodes;
+import com.financialapp.finances.domain.exception.DomainErrorCode;
 import com.financialapp.finances.web.dto.response.CurrencySummaryResponse;
 import com.financialapp.finances.web.dto.response.TransactionResponse;
 import com.financialapp.finances.web.mapper.TransactionWebMapper;
@@ -54,16 +56,18 @@ public class TransactionController {
     private final TransactionWebMapper mapper;
 
     @PostMapping
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_cbu", "invalid_money", "unsupported_currency", "same_account_transaction", "account_currency_mismatch", "transaction_not_owned", "invalid_identifier"})
     public ResponseEntity<ApiResponse<TransactionResponse>> record(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody RecordTransactionRequest req) {
         Transaction saved = recordTransaction.execute(
                 mapper.toRecordCommand(new UserId(userId), req));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Transaction recorded", toUser(saved, new UserId(userId))));
+                .body(ApiResponse.created("Transaction recorded", toUser(saved, new UserId(userId))));
     }
 
     @PutMapping("/{id}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier", "invalid_cbu", "invalid_money", "unsupported_currency", "same_account_transaction", "transaction_not_owned"})
     public ResponseEntity<ApiResponse<TransactionResponse>> update(
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long id,
@@ -76,12 +80,12 @@ public class TransactionController {
     }
 
     @DeleteMapping("/{id}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier", "transaction_not_owned"})
     public ResponseEntity<ApiResponse<Void>> delete(
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long id) {
         deleteTransaction.execute(new DeleteTransactionCommand(new UserId(userId), new TransactionId(id)));
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .success(true).message("Transaction deleted").build());
+        return ResponseEntity.ok(ApiResponse.ok("Transaction deleted", null));
     }
 
     @GetMapping

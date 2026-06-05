@@ -4,9 +4,9 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /build
 
-# Install parent POM to local Maven repository
-COPY financial-app-parent/pom.xml financial-app-parent/pom.xml
-RUN mvn -f financial-app-parent/pom.xml install -N -q
+# Install parent POM + commons modules to local Maven repository
+COPY financial-app-parent financial-app-parent
+RUN mvn -f financial-app-parent/pom.xml install -B -q -DskipTests
 
 # Resolve dependencies (cached layer — only re-runs when pom.xml changes)
 COPY ms-finances/pom.xml ms-finances/pom.xml

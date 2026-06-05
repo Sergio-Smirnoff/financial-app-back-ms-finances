@@ -1,5 +1,6 @@
 package com.financialapp.finances.domain.exception;
 
+import com.financialapp.commons.core.error.DomainException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Currency;

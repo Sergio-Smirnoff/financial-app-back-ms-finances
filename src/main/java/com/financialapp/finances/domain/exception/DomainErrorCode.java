@@ -1,10 +1,13 @@
 package com.financialapp.finances.domain.exception;
 
+import com.financialapp.commons.core.error.ErrorCategory;
+import com.financialapp.commons.core.error.ErrorCode;
+
 /**
  * Stable, framework-neutral domain error codes. Each carries an {@link ErrorCategory}
  * (mapped to HTTP only in web/error) and a wire {@code code} string for the API envelope.
  */
-public enum DomainErrorCode {
+public enum DomainErrorCode implements ErrorCode {
 
     // --- Value-object validation ---
     UNSUPPORTED_CURRENCY(ErrorCategory.UNPROCESSABLE, "unsupported_currency"),
@@ -30,6 +33,9 @@ public enum DomainErrorCode {
         this.code = code;
     }
 
-    public ErrorCategory getCategory() { return category; }
-    public String getCode() { return code; }
+    @Override
+    public ErrorCategory category() { return category; }
+
+    @Override
+    public String code() { return code; }
 }

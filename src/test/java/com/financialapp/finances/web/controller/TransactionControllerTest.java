@@ -78,7 +78,7 @@ class TransactionControllerTest {
                         .header("X-User-Id", 1L)
                         .param("from", "2026-05-01").param("to", "2026-05-31"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data.ARS.balance").value("60"));
     }
 

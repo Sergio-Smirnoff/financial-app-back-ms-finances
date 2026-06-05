@@ -61,7 +61,7 @@ src/main/java/com/financialapp/finances/
 │   │   ├── TransactionWebMapper.java
 │   │   └── CategoryWebMapper.java
 │   └── error/
-│       └── DomainExceptionHandler.java
+│       └── GlobalExceptionHandler.java
 │
 ├── application/                           Use-case implementations
 │   ├── transaction/impl/
@@ -172,7 +172,12 @@ src/main/java/com/financialapp/finances/
 
 ## Endpoints
 
-All responses are wrapped in `ApiResponse<T>`. User identity arrives via the `X-User-Id` header injected by the gateway.
+All responses use the shared envelope `{ status, title, code, message, data }` from `commons-core`
+(`com.financialapp.commons.core.response.ApiResponse`). `status`/`title` mirror the HTTP status;
+`code` appears only on errors with the `DomainErrorCode` slug; error details travel in `data`.
+Errors are rendered by `GlobalExceptionHandler extends ApiExceptionHandler` (commons-web) and every
+endpoint declares its throwable codes with `@ApiErrorCodes` (generated Swagger examples).
+User identity arrives via the `X-User-Id` header injected by the gateway.
 
 ### TransactionController — `/api/v1/finances/transactions`
 
@@ -180,7 +185,7 @@ All responses are wrapped in `ApiResponse<T>`. User identity arrives via the `X-
 |---|---|---|---|
 | POST | `/` | `X-User-Id` + `RecordTransactionRequest` | `ApiResponse<TransactionResponse>` 201 |
 | PUT | `/{id}` | `X-User-Id` + `UpdateTransactionRequest` | `ApiResponse<TransactionResponse>` |
-| DELETE | `/{id}` | `X-User-Id` | `ApiResponse<Void>` 204 |
+| DELETE | `/{id}` | `X-User-Id` | `ApiResponse<Void>` 200 |
 | GET | `/` | `X-User-Id` **or** `?accountCbu=` | without `accountCbu` → `ApiResponse<List<TransactionResponse>>`; with → `ApiResponse<List<AccountTransactionResponse>>` |
 | GET | `/summary` | `X-User-Id` + optional `?from=&to=` (ISO date) | `ApiResponse<Map<String, CurrencySummaryResponse>>` |
 

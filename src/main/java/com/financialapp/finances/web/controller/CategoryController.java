@@ -11,7 +11,9 @@ import com.financialapp.finances.web.dto.request.CreateCategoryRequest;
 import com.financialapp.finances.web.dto.request.CreateSubcategoryRequest;
 import com.financialapp.finances.web.dto.request.RenameSubcategoryRequest;
 import com.financialapp.finances.web.dto.request.UpdateCategoryRequest;
-import com.financialapp.finances.web.dto.response.ApiResponse;
+import com.financialapp.commons.core.response.ApiResponse;
+import com.financialapp.commons.web.openapi.ApiErrorCodes;
+import com.financialapp.finances.domain.exception.DomainErrorCode;
 import com.financialapp.finances.web.dto.response.CategoryResponse;
 import com.financialapp.finances.web.dto.response.SubcategoryResponse;
 import com.financialapp.finances.web.mapper.CategoryWebMapper;
@@ -51,6 +53,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier"})
     public ResponseEntity<ApiResponse<CategoryResponse>> get(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id) {
         Category category = getCategory.execute(new CategoryId(id), new UserId(userId));
@@ -58,15 +61,17 @@ public class CategoryController {
     }
 
     @PostMapping
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_category_name"})
     public ResponseEntity<ApiResponse<CategoryResponse>> create(
             @RequestHeader("X-User-Id") Long userId, @Valid @RequestBody CreateCategoryRequest req) {
         Category saved = createCategory.execute(
                 new CreateCategoryCommand(new UserId(userId), new CategoryName(req.name())));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Category created", mapper.toCategoryResponse(saved)));
+                .body(ApiResponse.created("Category created", mapper.toCategoryResponse(saved)));
     }
 
     @PutMapping("/{id}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier", "invalid_category_name"})
     public ResponseEntity<ApiResponse<CategoryResponse>> update(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id,
             @Valid @RequestBody UpdateCategoryRequest req) {
@@ -76,13 +81,15 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier"})
     public ResponseEntity<ApiResponse<Void>> archive(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id) {
         archiveCategory.execute(new ArchiveCategoryCommand(new UserId(userId), new CategoryId(id)));
-        return ResponseEntity.ok(ApiResponse.<Void>builder().success(true).message("Category archived").build());
+        return ResponseEntity.ok(ApiResponse.ok("Category archived", null));
     }
 
     @PostMapping("/{id}/restore")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier"})
     public ResponseEntity<ApiResponse<CategoryResponse>> restore(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id) {
         Category saved = restoreCategory.execute(new RestoreCategoryCommand(new UserId(userId), new CategoryId(id)));
@@ -90,6 +97,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}/subcategories")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier"})
     public ResponseEntity<ApiResponse<List<SubcategoryResponse>>> listSubcategoriesOf(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id) {
         List<SubcategoryResponse> rows = listSubcategories.execute(new CategoryId(id), new UserId(userId))
@@ -98,6 +106,7 @@ public class CategoryController {
     }
 
     @PostMapping("/{id}/subcategories")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier", "invalid_category_name", "subcategory_not_in_category"})
     public ResponseEntity<ApiResponse<SubcategoryResponse>> createSubcategoryIn(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id,
             @Valid @RequestBody CreateSubcategoryRequest req) {
@@ -106,17 +115,19 @@ public class CategoryController {
         List<Subcategory> subcategories = saved.subcategories();
         Subcategory created = subcategories.get(subcategories.size() - 1);   // the just-added subcategory
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Subcategory created", mapper.toSubcategoryResponse(created)));
+                .body(ApiResponse.created("Subcategory created", mapper.toSubcategoryResponse(created)));
     }
 
     @DeleteMapping("/{id}/subcategories/{subId}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier", "subcategory_not_in_category"})
     public ResponseEntity<ApiResponse<Void>> archiveSubcategoryIn(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id, @PathVariable Long subId) {
         archiveSubcategory.execute(new ArchiveSubcategoryCommand(new UserId(userId), new CategoryId(id), new CategoryId(subId)));
-        return ResponseEntity.ok(ApiResponse.<Void>builder().success(true).message("Subcategory archived").build());
+        return ResponseEntity.ok(ApiResponse.ok("Subcategory archived", null));
     }
 
     @PutMapping("/{id}/subcategories/{subId}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier", "invalid_category_name", "subcategory_not_in_category"})
     public ResponseEntity<ApiResponse<SubcategoryResponse>> renameSubcategoryIn(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id, @PathVariable Long subId,
             @Valid @RequestBody RenameSubcategoryRequest req) {
@@ -127,6 +138,7 @@ public class CategoryController {
     }
 
     @PostMapping("/{id}/subcategories/{subId}/restore")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"invalid_identifier", "subcategory_not_in_category"})
     public ResponseEntity<ApiResponse<SubcategoryResponse>> restoreSubcategoryIn(
             @RequestHeader("X-User-Id") Long userId, @PathVariable Long id, @PathVariable Long subId) {
         Category saved = restoreSubcategory.execute(new RestoreSubcategoryCommand(

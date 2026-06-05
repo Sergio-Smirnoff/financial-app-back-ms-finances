@@ -2,7 +2,7 @@ package com.financialapp.finances.domain.exception.category;
 
 import com.financialapp.finances.domain.common.model.CategoryId;
 import com.financialapp.finances.domain.exception.DomainErrorCode;
-import com.financialapp.finances.domain.exception.DomainException;
+import com.financialapp.commons.core.error.DomainException;
 
 import java.util.Map;
 

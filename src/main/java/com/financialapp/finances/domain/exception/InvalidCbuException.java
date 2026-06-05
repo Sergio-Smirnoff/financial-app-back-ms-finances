@@ -1,5 +1,7 @@
 package com.financialapp.finances.domain.exception;
 
+import com.financialapp.commons.core.error.DomainException;
+
 import java.util.Map;
 
 public class InvalidCbuException extends DomainException {

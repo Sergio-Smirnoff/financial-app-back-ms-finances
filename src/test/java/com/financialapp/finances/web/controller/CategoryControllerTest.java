@@ -76,7 +76,7 @@ class CategoryControllerTest {
     void deleteArchivesAndReturnsSuccess() throws Exception {
         mvc.perform(delete("/api/v1/finances/categories/1").header("X-User-Id", "42"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.status").value(200));
     }
 
     private Category foodWithSubcategory(CategoryStatus subStatus) {
