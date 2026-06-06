@@ -118,3 +118,13 @@ Flyway runs automatically on startup. Migration files are in `src/main/resources
 - `V6` — default system categories seed data
 
 **Never modify existing migration files.** Always add new versioned migrations.
+
+## CI/CD
+
+| Workflow | Trigger | Does |
+|---|---|---|
+| `ci.yml` | PRs; push to develop/master | tests + docker build via shared `backend-ci.yml` |
+| `docker-publish.yml` | push to master; `v*` tags | GHCR publish: `latest`, `sha-*`, semver on tags |
+| `release.yml` | manual (bump dropdown) | next `vX.Y.Z` tag + Release + versioned publish |
+
+Reusable workflows live in the root repo `Sergio-Smirnoff/financial-app`.
