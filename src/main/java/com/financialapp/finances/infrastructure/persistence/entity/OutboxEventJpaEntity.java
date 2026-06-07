@@ -1,43 +1,23 @@
 package com.financialapp.finances.infrastructure.persistence.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import java.time.LocalDateTime;
+import com.financialapp.commons.messaging.infrastructure.persistence.entity.OutboxRecordEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "outbox_event", schema = "finances")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class OutboxEventJpaEntity {
+public class OutboxEventJpaEntity extends OutboxRecordEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false, length = 100)
-    private String topic;
-
-    @Column(name = "aggregate_key", nullable = false, length = 50)
-    private String aggregateKey;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
-    private String payload;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean sent = false;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(name = "sent_at")
-    private LocalDateTime sentAt;
 }
