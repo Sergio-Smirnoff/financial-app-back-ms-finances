@@ -33,23 +33,14 @@ spring:
     locations: classpath:db/migration
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
       group-id: ${spring.application.name}-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      properties:
-        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-        spring.json.trusted.packages: "com.financialapp.*"
-        spring.json.use.type.headers: false
-        spring.json.value.default.type: com.financialapp.finances.infrastructure.messaging.payload.PaymentEvent
 
-finances:
+messaging:
   outbox:
     poll-ms: ${OUTBOX_POLL_MS:2000}
-    batch-size: ${OUTBOX_BATCH_SIZE:100}
+
+finances:
   ownership:
     cache-ttl-ms: ${OWNERSHIP_CACHE_TTL_MS:60000}
   currencies:
