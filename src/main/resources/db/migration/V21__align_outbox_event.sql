@@ -7,7 +7,7 @@ ALTER TABLE finances.outbox_event ALTER COLUMN topic TYPE VARCHAR(249);
 ALTER TABLE finances.outbox_event ALTER COLUMN aggregate_key TYPE VARCHAR(64);
 
 UPDATE finances.outbox_event
-   SET event_id     = gen_random_uuid()::text,
+   SET event_id     = 'migrated-' || id::text,
        ce_type      = 'finances.transaction.created',
        ce_source    = 'ms-finances',
        data_schema  = 'https://schemas.financial-app/finances/transaction-created/v1';

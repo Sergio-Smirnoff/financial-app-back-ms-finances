@@ -1,10 +1,10 @@
 package com.financialapp.finances;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@Disabled("Requires live Postgres + Kafka infra — run manually against a running stack")
+@EnabledIfEnvironmentVariable(named = "INTEGRATION_INFRA", matches = "true")
 @SpringBootTest(properties = "INTERNAL_AUTH_TOKEN=test-token")
 class SchemaBootIT {
 
