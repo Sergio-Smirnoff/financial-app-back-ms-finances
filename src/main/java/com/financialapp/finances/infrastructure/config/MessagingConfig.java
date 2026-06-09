@@ -10,6 +10,11 @@ public class MessagingConfig {
 
     @Bean
     public NewTopic transactionCreatedTopic() {
-        return TopicBuilder.name("transaction.created").partitions(1).replicas(1).build();
+        return TopicBuilder.name("finances.transaction.created").partitions(1).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic paymentRecordedTopic() {
+        return TopicBuilder.name("banks.payment.recorded").partitions(1).replicas(1).build();
     }
 }
