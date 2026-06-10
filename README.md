@@ -215,8 +215,8 @@ Dual-mode list: with `accountCbu` the endpoint serves internal ms-banks calls (n
 
 | Event | Topic | Trigger | Payload |
 |---|---|---|---|
-| `TransactionCreated` | `transaction.created` | New transaction recorded | outbox row id, accountCbu, signed amount, currency |
-| `TransactionReversed` | `transaction.created` | Transaction deleted | same shape; negated amount |
+| `TransactionCreated` | `finances.transaction.created` | New transaction recorded | outbox row id, accountCbu, signed amount, currency |
+| `TransactionReversed` | `finances.transaction.created` | Transaction deleted | same shape; negated amount |
 
 ### Consumed (ms-banks → finances)
 
