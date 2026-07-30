@@ -47,6 +47,7 @@ class TransactionControllerTest {
     @MockBean ListAccountTransactions listAccountTransactions;
     @MockBean ListTransactionsFiltered listTransactionsFiltered;
     @MockBean CountUncategorisedTransactions countUncategorisedTransactions;
+    @MockBean GetTransactionDetail getTransactionDetail;
     @MockBean CategoryRepository categoryRepository;
     @MockBean TransactionClassifier classifier;
     @MockBean AccountOwnershipGateway ownershipGateway;

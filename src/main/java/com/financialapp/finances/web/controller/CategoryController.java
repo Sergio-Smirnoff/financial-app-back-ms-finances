@@ -1,10 +1,12 @@
 package com.financialapp.finances.web.controller;
 
 import com.financialapp.finances.domain.common.model.CategoryId;
+import com.financialapp.finances.domain.common.model.DateRange;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.category.Category;
 import com.financialapp.finances.domain.model.category.CategoryName;
 import com.financialapp.finances.domain.model.category.Subcategory;
+import com.financialapp.finances.domain.model.transaction.TransactionKind;
 import com.financialapp.finances.domain.usecase.category.*;
 import com.financialapp.finances.domain.usecase.category.command.*;
 import com.financialapp.finances.web.dto.request.CreateCategoryRequest;
@@ -15,15 +17,18 @@ import com.financialapp.commons.core.response.ApiResponse;
 import com.financialapp.commons.web.openapi.ApiErrorCodes;
 import com.financialapp.finances.domain.exception.DomainErrorCode;
 import com.financialapp.finances.web.dto.response.CategoryResponse;
+import com.financialapp.finances.web.dto.response.CategorySpendResponse;
 import com.financialapp.finances.web.dto.response.SubcategoryResponse;
 import com.financialapp.finances.web.mapper.CategoryWebMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Tag(name = "Category")
@@ -43,12 +48,33 @@ public class CategoryController {
     private final ArchiveSubcategory archiveSubcategory;
     private final RenameSubcategory renameSubcategory;
     private final RestoreSubcategory restoreSubcategory;
+    private final GetCategorySpend getCategorySpend;
     private final CategoryWebMapper mapper;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> list(@RequestHeader("X-User-Id") Long userId) {
         List<CategoryResponse> rows = listCategories.execute(new UserId(userId))
                 .stream().map(mapper::toCategoryResponse).toList();
+        return ResponseEntity.ok(ApiResponse.ok(rows));
+    }
+
+    @GetMapping("/spend")
+    public ResponseEntity<ApiResponse<List<CategorySpendResponse>>> spend(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String kind) {
+        DateRange dateRange = (from != null && to != null) ? new DateRange(from, to) : null;
+        TransactionKind transactionKind = kind != null && !kind.isBlank() ? TransactionKind.valueOf(kind) : null;
+        List<CategorySpend> spends = getCategorySpend.execute(new UserId(userId), dateRange, transactionKind);
+        List<CategorySpendResponse> rows = spends.stream()
+                .map(s -> new CategorySpendResponse(
+                        s.categoryId().value(),
+                        s.categoryName(),
+                        s.total().amount().toPlainString(),
+                        s.total().currency().getCurrencyCode(),
+                        s.transactionCount()))
+                .toList();
         return ResponseEntity.ok(ApiResponse.ok(rows));
     }
 

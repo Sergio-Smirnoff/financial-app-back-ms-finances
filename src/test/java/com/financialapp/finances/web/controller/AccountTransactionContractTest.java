@@ -7,6 +7,7 @@ import com.financialapp.finances.domain.repository.CategoryRepository;
 import com.financialapp.finances.domain.service.TransactionClassifier;
 import com.financialapp.finances.domain.usecase.transaction.CountUncategorisedTransactions;
 import com.financialapp.finances.domain.usecase.transaction.DeleteTransaction;
+import com.financialapp.finances.domain.usecase.transaction.GetTransactionDetail;
 import com.financialapp.finances.domain.usecase.transaction.GetTransactionSummary;
 import com.financialapp.finances.domain.usecase.transaction.ListAccountTransactions;
 import com.financialapp.finances.domain.usecase.transaction.ListTransactionsFiltered;
@@ -46,6 +47,7 @@ class AccountTransactionContractTest {
     @MockBean ListAccountTransactions listAccountTransactions;
     @MockBean ListTransactionsFiltered listTransactionsFiltered;
     @MockBean CountUncategorisedTransactions countUncategorisedTransactions;
+    @MockBean GetTransactionDetail getTransactionDetail;
     @MockBean CategoryRepository categoryRepository;
     @MockBean TransactionClassifier classifier;
     @MockBean AccountOwnershipGateway ownershipGateway;

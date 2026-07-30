@@ -44,6 +44,7 @@ public class TransactionController {
     private final ListAccountTransactions listAccountTransactions;
     private final ListTransactionsFiltered listTransactionsFiltered;
     private final CountUncategorisedTransactions countUncategorisedTransactions;
+    private final GetTransactionDetail getTransactionDetail;
     private final CategoryRepository categoryRepository;
     private final TransactionClassifier classifier;
     private final AccountOwnershipGateway ownershipGateway;
@@ -165,6 +166,19 @@ public class TransactionController {
                                 s.balance().toPlainString()),
                         (a, b) -> a, LinkedHashMap::new));
         return ResponseEntity.ok(ApiResponse.ok(byCurrency));
+    }
+
+    @GetMapping("/{id}")
+    @ApiErrorCodes(catalog = DomainErrorCode.class, value = {"transaction_not_found"})
+    public ResponseEntity<ApiResponse<TransactionResponse>> detail(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id) {
+        UserId uId = new UserId(userId);
+        Transaction tx = getTransactionDetail.execute(new TransactionId(id), uId);
+        TransactionKind kind = classifier.classify(tx, ownershipGateway.ownedAccounts(uId));
+        CategoryNames names = categoryRepository.findNamesById(tx.categoryId()).orElse(new CategoryNames(null, null));
+        String displayName = names.subcategory() != null ? names.subcategory() : names.category();
+        return ResponseEntity.ok(ApiResponse.ok(mapper.toUserResponse(new ClassifiedTransaction(tx, kind), displayName)));
     }
 
     private TransactionResponse toUser(Transaction saved, UserId userId) {
