@@ -3,11 +3,13 @@ package com.financialapp.finances.web.controller;
 import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.transaction.Transaction;
+import com.financialapp.finances.domain.repository.CategoryRepository;
 import com.financialapp.finances.domain.service.TransactionClassifier;
+import com.financialapp.finances.domain.usecase.transaction.CountUncategorisedTransactions;
 import com.financialapp.finances.domain.usecase.transaction.DeleteTransaction;
 import com.financialapp.finances.domain.usecase.transaction.GetTransactionSummary;
 import com.financialapp.finances.domain.usecase.transaction.ListAccountTransactions;
-import com.financialapp.finances.domain.usecase.transaction.ListUserTransactions;
+import com.financialapp.finances.domain.usecase.transaction.ListTransactionsFiltered;
 import com.financialapp.finances.domain.usecase.transaction.RecordTransaction;
 import com.financialapp.finances.domain.usecase.transaction.UpdateTransaction;
 import com.financialapp.finances.domain.model.category.CategoryNames;
@@ -40,9 +42,11 @@ class AccountTransactionContractTest {
     @MockBean RecordTransaction recordTransaction;
     @MockBean UpdateTransaction updateTransaction;
     @MockBean DeleteTransaction deleteTransaction;
-    @MockBean ListUserTransactions listUserTransactions;
     @MockBean GetTransactionSummary getTransactionSummary;
     @MockBean ListAccountTransactions listAccountTransactions;
+    @MockBean ListTransactionsFiltered listTransactionsFiltered;
+    @MockBean CountUncategorisedTransactions countUncategorisedTransactions;
+    @MockBean CategoryRepository categoryRepository;
     @MockBean TransactionClassifier classifier;
     @MockBean AccountOwnershipGateway ownershipGateway;
 

@@ -6,6 +6,7 @@ import com.financialapp.finances.infrastructure.persistence.entity.TransactionJp
 import com.financialapp.finances.infrastructure.persistence.jpa.TransactionJpaRepository;
 import com.financialapp.finances.infrastructure.persistence.mapper.TransactionPersistenceMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,8 +21,10 @@ import static org.mockito.Mockito.*;
 class TransactionRepositoryImplQueryTest {
 
     private final TransactionJpaRepository jpa = mock(TransactionJpaRepository.class);
+    private final NamedParameterJdbcTemplate jdbcTemplate = mock(NamedParameterJdbcTemplate.class);
+    private final SystemCategoryResolver systemCategoryResolver = mock(SystemCategoryResolver.class);
     private final TransactionRepositoryImpl repo =
-            new TransactionRepositoryImpl(jpa, new TransactionPersistenceMapper());
+            new TransactionRepositoryImpl(jpa, new TransactionPersistenceMapper(), jdbcTemplate, systemCategoryResolver);
 
     private TransactionJpaEntity entity(long id) {
         return TransactionJpaEntity.builder().id(id).userId(42L)

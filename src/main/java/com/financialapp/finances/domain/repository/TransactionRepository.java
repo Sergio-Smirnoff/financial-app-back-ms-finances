@@ -34,4 +34,10 @@ public interface TransactionRepository {
                             BigDecimal amount, String currency, LocalDate date, String description);
 
     void delete(Transaction transaction);
+
+    com.financialapp.commons.core.domain.model.PageResult<Transaction> findFiltered(
+            com.financialapp.finances.domain.model.transaction.TransactionFilter filter,
+            com.financialapp.finances.domain.model.transaction.CursorPage page);
+
+    long countUncategorised(UserId userId);
 }
