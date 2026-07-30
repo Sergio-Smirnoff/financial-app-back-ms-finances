@@ -23,7 +23,11 @@ public enum DomainErrorCode implements ErrorCode {
     // --- Transaction ---
     SAME_ACCOUNT_TRANSACTION(ErrorCategory.BAD_REQUEST, "same_account_transaction"),
     ACCOUNT_CURRENCY_MISMATCH(ErrorCategory.BAD_REQUEST, "account_currency_mismatch"),
-    TRANSACTION_NOT_OWNED(ErrorCategory.UNPROCESSABLE, "transaction_not_owned");
+    TRANSACTION_NOT_OWNED(ErrorCategory.UNPROCESSABLE, "transaction_not_owned"),
+
+    // --- Budget ---
+    INVALID_BUDGET(ErrorCategory.BAD_REQUEST, "invalid_budget"),
+    BUDGET_NOT_FOUND(ErrorCategory.NOT_FOUND, "budget_not_found");
 
     private final ErrorCategory category;
     private final String code;
