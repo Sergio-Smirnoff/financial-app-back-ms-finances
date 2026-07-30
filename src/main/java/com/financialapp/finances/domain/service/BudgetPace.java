@@ -16,16 +16,20 @@ public class BudgetPace {
 
     public BudgetPaceResult evaluate(Budget budget, Money actualSpend, LocalDate today) {
         Objects.requireNonNull(budget, "budget must not be null");
-        Objects.requireNonNull(actualSpend, "actualSpend must not be null");
         Objects.requireNonNull(today, "today must not be null");
 
-        if (!budget.amount().currency().equals(actualSpend.currency())) {
-            throw new InvalidBudgetException("Currency mismatch between budget ("
-                    + budget.amount().currency() + ") and spend (" + actualSpend.currency() + ")");
-        }
-
         BigDecimal budgetAmount = budget.amount().amount();
-        BigDecimal spendAmount = actualSpend.amount();
+        BigDecimal spendAmount;
+
+        if (actualSpend != null) {
+            if (!budget.amount().currency().equals(actualSpend.currency())) {
+                throw new InvalidBudgetException("Currency mismatch between budget ("
+                        + budget.amount().currency() + ") and spend (" + actualSpend.currency() + ")");
+            }
+            spendAmount = actualSpend.amount();
+        } else {
+            spendAmount = BigDecimal.ZERO;
+        }
 
         BigDecimal pctUsed = spendAmount.divide(budgetAmount, 4, RoundingMode.HALF_EVEN)
                 .multiply(new BigDecimal("100"))
