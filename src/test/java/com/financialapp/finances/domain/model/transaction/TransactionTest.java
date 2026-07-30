@@ -41,6 +41,8 @@ class TransactionTest {
         assertThat(t.money()).isEqualTo(ars("100.00"));
         assertThat(t.categoryId()).isEqualTo(CATEGORY);
         assertThat(t.currency()).isEqualTo(ARS);
+        assertThat(t.paymentMethod()).isEqualTo(PaymentMethod.OTHER);
+        assertThat(t.note()).isNull();
     }
 
     @Test void rejectsSameFromAndTo() {
@@ -57,6 +59,19 @@ class TransactionTest {
     @Test void allowsNullDescription() {
         assertThat(Transaction.create(USER, FROM, TO, ars("1.00"), CATEGORY, null, DATE).description())
             .isNull();
+    }
+
+    @Test void acceptsCustomPaymentMethodAndTrimsNote() {
+        Transaction t = Transaction.create(USER, FROM, TO, ars("100.00"), CATEGORY, "lunch", DATE,
+                PaymentMethod.DEBIT_CARD, "  my note  ");
+        assertThat(t.paymentMethod()).isEqualTo(PaymentMethod.DEBIT_CARD);
+        assertThat(t.note()).isEqualTo("my note");
+    }
+
+    @Test void rejectsOverLongNote() {
+        String tooLong = "n".repeat(501);
+        assertThatThrownBy(() -> Transaction.create(USER, FROM, TO, ars("1.00"), CATEGORY, "desc", DATE, PaymentMethod.CREDIT_CARD, tooLong))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test void signedForCreditsDestinationAndDebitsSource() {
@@ -78,18 +93,20 @@ class TransactionTest {
         assertThat(t.involves(new Cbu("9".repeat(22)))).isFalse();
     }
 
-    @Test void changeDetailsUpdatesEditableFieldsAndFreezesMoneyAndIdentity() {
+    @Test void changeDetailsUpdatesEditableFieldsAndFreezesMoneyPaymentMethodAndIdentity() {
         Transaction persisted = Transaction.reconstitute(
-            new TransactionId(7L), USER, FROM, TO, ars("100.00"), CATEGORY, "old", DATE);
+            new TransactionId(7L), USER, FROM, TO, ars("100.00"), CATEGORY, "old", DATE, PaymentMethod.CREDIT_CARD, "old note");
         Transaction updated = persisted.changeDetails(
-            new CategoryId(20L), "new", DATE.plusDays(1));
+            new CategoryId(20L), "new", DATE.plusDays(1), "new note");
         assertThat(updated.id()).isEqualTo(new TransactionId(7L));
         assertThat(updated.userId()).isEqualTo(USER);
         assertThat(updated.fromCbu()).isEqualTo(FROM);
         assertThat(updated.toCbu()).isEqualTo(TO);
         assertThat(updated.money()).isEqualTo(ars("100.00")); // money is frozen
+        assertThat(updated.paymentMethod()).isEqualTo(PaymentMethod.CREDIT_CARD); // paymentMethod is frozen
         assertThat(updated.categoryId()).isEqualTo(new CategoryId(20L));
         assertThat(updated.description()).isEqualTo("new");
         assertThat(updated.date()).isEqualTo(DATE.plusDays(1));
+        assertThat(updated.note()).isEqualTo("new note");
     }
 }

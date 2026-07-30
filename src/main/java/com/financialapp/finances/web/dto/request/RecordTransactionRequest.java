@@ -10,4 +10,6 @@ public record RecordTransactionRequest(
         @NotBlank @SupportedCurrency String currency,
         @NotNull Long categoryId,
         String description,
-        @NotNull LocalDate date) {}
+        @NotNull LocalDate date,
+        String paymentMethod,
+        String note) {}

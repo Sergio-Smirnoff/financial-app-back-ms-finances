@@ -12,10 +12,11 @@ import java.time.LocalDate;
 public record UpdateTransactionRequest(
         @Positive Long categoryId,
         String description,
-        LocalDate date) {
+        LocalDate date,
+        String note) {
 
-    @AssertTrue(message = "At least one of categoryId, description or date must be provided")
+    @AssertTrue(message = "At least one of categoryId, description, date or note must be provided")
     public boolean isAtLeastOneFieldPresent() {
-        return categoryId != null || description != null || date != null;
+        return categoryId != null || description != null || date != null || note != null;
     }
 }

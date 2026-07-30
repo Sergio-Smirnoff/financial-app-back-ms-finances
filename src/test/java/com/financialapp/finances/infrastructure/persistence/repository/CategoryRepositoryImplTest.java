@@ -25,8 +25,9 @@ class CategoryRepositoryImplTest {
 
     private final CategoryJpaRepository jpa = mock(CategoryJpaRepository.class);
     private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
+    private final SystemCategoryResolver resolver = mock(SystemCategoryResolver.class);
     private final CategoryRepositoryImpl repo =
-            new CategoryRepositoryImpl(jpa, new CategoryPersistenceMapper(), jdbc);
+            new CategoryRepositoryImpl(jpa, new CategoryPersistenceMapper(), jdbc, resolver);
 
     @Test
     void findAllOwnedByMapsRootsWithChildren() {

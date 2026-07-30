@@ -42,7 +42,8 @@ public class RecordTransactionUseCaseImpl implements RecordTransaction {
 
         Transaction tx = Transaction.create(
                 command.userId(), command.fromCbu(), command.toCbu(),
-                command.money(), command.categoryId(), command.description(), command.date());
+                command.money(), command.categoryId(), command.description(), command.date(),
+                command.paymentMethod(), command.note());
 
         // Reject before persisting: every owned side must be held in the transaction's currency.
         currencyValidator.validate(tx, owned);

@@ -30,7 +30,8 @@ public class UpdateTransactionUseCaseImpl implements UpdateTransaction {
         Transaction updated = existing.changeDetails(
                 command.categoryId() != null ? command.categoryId() : existing.categoryId(),
                 command.description() != null ? command.description() : existing.description(),
-                command.date() != null ? command.date() : existing.date());
+                command.date() != null ? command.date() : existing.date(),
+                command.note() != null ? command.note() : existing.note());
 
         return transactionRepository.save(updated);
     }

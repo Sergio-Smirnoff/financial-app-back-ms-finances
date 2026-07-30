@@ -23,12 +23,17 @@ public class TransactionPersistenceMapper {
                 .categoryId(t.categoryId().value())
                 .description(t.description())
                 .date(t.date())
+                .paymentMethod(t.paymentMethod() != null ? t.paymentMethod().name() : null)
+                .note(t.note())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
     }
 
     public Transaction toDomain(TransactionJpaEntity e) {
+        com.financialapp.finances.domain.model.transaction.PaymentMethod pm = e.getPaymentMethod() != null
+                ? com.financialapp.finances.domain.model.transaction.PaymentMethod.valueOf(e.getPaymentMethod())
+                : com.financialapp.finances.domain.model.transaction.PaymentMethod.OTHER;
         return Transaction.reconstitute(
                 new TransactionId(e.getId()),
                 new UserId(e.getUserId()),
@@ -37,6 +42,8 @@ public class TransactionPersistenceMapper {
                 new Money(e.getAmount(), Currency.getInstance(e.getCurrency())),
                 new CategoryId(e.getCategoryId()),
                 e.getDescription(),
-                e.getDate());
+                e.getDate(),
+                pm,
+                e.getNote());
     }
 }

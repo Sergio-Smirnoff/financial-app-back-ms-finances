@@ -17,17 +17,10 @@ import java.util.Currency;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * A money movement from one account to another. Both sides are always a {@link Cbu}; whether
- * the transaction is an expense, income or transfer is derived per user from account ownership
- * (see {@code TransactionPosting}), never stored as a type or carried as a sign on {@link Money}.
- *
- * Immutable: every mutator returns a new instance and the single private constructor is the only
- * validation point. {@code id} is {@code null} until the transaction is persisted.
- */
 public final class Transaction {
 
     private static final int MAX_DESCRIPTION_LENGTH = 500;
+    private static final int MAX_NOTE_LENGTH = 500;
 
     private final TransactionId id;
     private final UserId userId;
@@ -37,15 +30,14 @@ public final class Transaction {
     private final CategoryId categoryId;
     private final String description;
     private final LocalDate date;
+    private final PaymentMethod paymentMethod;
+    private final String note;
 
-    /**
-     * Events this aggregate has recorded but the application has not yet drained. The value fields
-     * above stay immutable; only this buffer mutates (a standard aggregate event-recording seam).
-     */
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     private Transaction(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
-                        CategoryId categoryId, String description, LocalDate date) {
+                        CategoryId categoryId, String description, LocalDate date,
+                        PaymentMethod paymentMethod, String note) {
         this.userId = Objects.requireNonNull(userId, "userId must not be null");
         this.fromCbu = Objects.requireNonNull(fromCbu, "fromCbu must not be null");
         this.toCbu = Objects.requireNonNull(toCbu, "toCbu must not be null");
@@ -56,36 +48,43 @@ public final class Transaction {
             throw new SameAccountTransactionException(fromCbu);
         }
         this.description = normaliseDescription(description);
+        this.paymentMethod = paymentMethod != null ? paymentMethod : PaymentMethod.OTHER;
+        this.note = normaliseNote(note);
         this.id = id;
     }
 
-    /** New, unpersisted transaction (id == null). */
     public static Transaction create(UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
                                      CategoryId categoryId, String description, LocalDate date) {
-        return new Transaction(null, userId, fromCbu, toCbu, money, categoryId, description, date);
+        return create(userId, fromCbu, toCbu, money, categoryId, description, date, PaymentMethod.OTHER, null);
     }
 
-    /** Rebuild from persistence (id required). */
+    public static Transaction create(UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
+                                     CategoryId categoryId, String description, LocalDate date,
+                                     PaymentMethod paymentMethod, String note) {
+        return new Transaction(null, userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note);
+    }
+
     public static Transaction reconstitute(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu,
                                            Money money, CategoryId categoryId, String description,
                                            LocalDate date) {
+        return reconstitute(id, userId, fromCbu, toCbu, money, categoryId, description, date, PaymentMethod.OTHER, null);
+    }
+
+    public static Transaction reconstitute(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu,
+                                           Money money, CategoryId categoryId, String description,
+                                           LocalDate date, PaymentMethod paymentMethod, String note) {
         return new Transaction(Objects.requireNonNull(id, "id must not be null"),
-                userId, fromCbu, toCbu, money, categoryId, description, date);
+                userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note);
     }
 
-    /**
-     * Edit category/description/date. Identity, the two accounts and the money (amount + currency)
-     * are frozen, so an edit never moves an account balance and records no balance events.
-     */
     public Transaction changeDetails(CategoryId categoryId, String description, LocalDate date) {
-        return new Transaction(id, userId, fromCbu, toCbu, money, categoryId, description, date);
+        return changeDetails(categoryId, description, date, this.note);
     }
 
-    /**
-     * Signed amount of this transaction from one account's perspective: positive when {@code cbu}
-     * is the destination (credit), negative when it is the source (debit). {@code cbu} must be one
-     * of the two sides — otherwise it is a programming error.
-     */
+    public Transaction changeDetails(CategoryId categoryId, String description, LocalDate date, String note) {
+        return new Transaction(id, userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note);
+    }
+
     public BigDecimal signedFor(Cbu cbu) {
         if (toCbu.equals(cbu)) {
             return money.amount();
@@ -101,12 +100,6 @@ public final class Transaction {
         return fromCbu.equals(cbu) || toCbu.equals(cbu);
     }
 
-    /**
-     * Record one {@link TransactionCreated} event per balance movement this transaction caused on an
-     * owned account (computed by {@code TransactionPosting}). The aggregate must be persisted first:
-     * each event carries this transaction's id, which ms-banks-bound consumers rely on. The
-     * application drains them via {@link #pullDomainEvents()} and hands them to the event publisher.
-     */
     public void recordCreationEvents(List<BalanceMovement> movements) {
         if (id == null) {
             throw new IllegalStateException(
@@ -118,10 +111,6 @@ public final class Transaction {
         }
     }
 
-    /**
-     * Record the undo of every balance movement this transaction caused (delete path). One
-     * {@link TransactionReversed} per movement, carrying the negated amount.
-     */
     public void recordReversal(List<BalanceMovement> movements) {
         if (id == null) {
             throw new IllegalStateException(
@@ -134,7 +123,6 @@ public final class Transaction {
         }
     }
 
-    /** Return and clear the recorded domain events. */
     public List<DomainEvent> pullDomainEvents() {
         List<DomainEvent> drained = List.copyOf(domainEvents);
         domainEvents.clear();
@@ -157,6 +145,18 @@ public final class Transaction {
         return trimmed;
     }
 
+    private static String normaliseNote(String note) {
+        if (note == null) {
+            return null;
+        }
+        String trimmed = note.trim();
+        if (trimmed.length() > MAX_NOTE_LENGTH) {
+            throw new IllegalArgumentException(
+                "note must be at most " + MAX_NOTE_LENGTH + " characters");
+        }
+        return trimmed;
+    }
+
     public TransactionId id() { return id; }
     public UserId userId() { return userId; }
     public Cbu fromCbu() { return fromCbu; }
@@ -165,4 +165,6 @@ public final class Transaction {
     public CategoryId categoryId() { return categoryId; }
     public String description() { return description; }
     public LocalDate date() { return date; }
+    public PaymentMethod paymentMethod() { return paymentMethod; }
+    public String note() { return note; }
 }
