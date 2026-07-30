@@ -186,16 +186,35 @@ User identity arrives via the `X-User-Id` header injected by the gateway.
 | POST | `/` | `X-User-Id` + `RecordTransactionRequest` | `ApiResponse<TransactionResponse>` 201 |
 | PUT | `/{id}` | `X-User-Id` + `UpdateTransactionRequest` | `ApiResponse<TransactionResponse>` |
 | DELETE | `/{id}` | `X-User-Id` | `ApiResponse<Void>` 200 |
-| GET | `/` | `X-User-Id` **or** `?accountCbu=` | without `accountCbu` → `ApiResponse<List<TransactionResponse>>`; with → `ApiResponse<List<AccountTransactionResponse>>` |
+| GET | `/` | `X-User-Id` **or** `?accountCbu=` | with cursor/paging/filters -> `ApiResponse<PageResultResponse<TransactionResponse>>`; with `accountCbu` -> `ApiResponse<List<AccountTransactionResponse>>` |
+| GET | `/{id}` | `X-User-Id` | `ApiResponse<TransactionResponse>` (includes paymentMethod, note) |
+| GET | `/uncategorised/count` | `X-User-Id` | `ApiResponse<UncategorisedCountResponse>` |
 | GET | `/summary` | `X-User-Id` + optional `?from=&to=` (ISO date) | `ApiResponse<Map<String, CurrencySummaryResponse>>` |
 
-Dual-mode list: with `accountCbu` the endpoint serves internal ms-banks calls (no user context required) and returns per-account signed projections.
+### BudgetController — `/api/v1/finances/budgets`
+
+| Method | Path | Request | Response |
+|---|---|---|---|
+| GET | `/` | `X-User-Id` + `?year=&month=` | `ApiResponse<List<BudgetResponse>>` |
+| PUT | `/{categoryId}` | `X-User-Id` + `UpsertBudgetRequest` | `ApiResponse<BudgetResponse>` |
+| GET | `/pace` | `X-User-Id` + `?year=&month=` | `ApiResponse<List<BudgetPaceResponse>>` |
+
+### CategorizationRuleController — `/api/v1/finances/categorization-rules`
+
+| Method | Path | Request | Response |
+|---|---|---|---|
+| GET | `/` | `X-User-Id` | `ApiResponse<List<CategorizationRuleResponse>>` |
+| POST | `/` | `X-User-Id` + `CreateCategorizationRuleRequest` | `ApiResponse<CategorizationRuleResponse>` 201 |
+| POST | `/{id}/preview` | `X-User-Id` | `ApiResponse<RulePreviewResponse>` |
+| DELETE | `/{id}` | `X-User-Id` | `ApiResponse<Void>` |
+| POST | `/suggest` | `SuggestCategoriesRequest` | `ApiResponse<List<CategorySuggestionResponse>>` |
 
 ### CategoryController — `/api/v1/finances/categories`
 
 | Method | Path | Request | Response |
 |---|---|---|---|
 | GET | `/` | `X-User-Id` | `ApiResponse<List<CategoryResponse>>` (nested active subcategories) |
+| GET | `/spend` | `X-User-Id` + optional `?from=&to=&kind=` | `ApiResponse<List<CategorySpendResponse>>` |
 | GET | `/{id}` | `X-User-Id` | `ApiResponse<CategoryResponse>` |
 | POST | `/` | `X-User-Id` + `CreateCategoryRequest` | `ApiResponse<CategoryResponse>` 201 |
 | PUT | `/{id}` | `X-User-Id` + `UpdateCategoryRequest` | `ApiResponse<CategoryResponse>` |
@@ -259,7 +278,7 @@ Copy `.env.example` (workspace root) to `.env` in this directory and fill in the
 
 ## Flyway migrations
 
-Current head: **V20**. Never modify existing migration files; always add a new versioned file.
+Current head: **V25**. Never modify existing migration files; always add a new versioned file.
 
 | Version | Description |
 |---|---|
@@ -283,6 +302,11 @@ Current head: **V20**. Never modify existing migration files; always add a new v
 | V18 | collapse unassigned and drop category presentation columns |
 | V19 | drop transaction category FK |
 | V20 | insert investments system category |
+| V21 | align outbox event payload |
+| V22 | create budgets |
+| V23 | create categorization rules |
+| V24 | add payment method and note to transactions |
+| V25 | add transaction cursor index |
 
 ---
 
