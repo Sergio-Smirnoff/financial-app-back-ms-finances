@@ -27,7 +27,11 @@ public enum DomainErrorCode implements ErrorCode {
 
     // --- Budget ---
     INVALID_BUDGET(ErrorCategory.BAD_REQUEST, "invalid_budget"),
-    BUDGET_NOT_FOUND(ErrorCategory.NOT_FOUND, "budget_not_found");
+    BUDGET_NOT_FOUND(ErrorCategory.NOT_FOUND, "budget_not_found"),
+
+    // --- Categorization Rule ---
+    INVALID_CATEGORIZATION_RULE(ErrorCategory.BAD_REQUEST, "invalid_categorization_rule"),
+    CATEGORIZATION_RULE_NOT_FOUND(ErrorCategory.NOT_FOUND, "categorization_rule_not_found");
 
     private final ErrorCategory category;
     private final String code;
