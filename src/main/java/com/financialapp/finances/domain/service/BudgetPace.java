@@ -39,7 +39,7 @@ public class BudgetPace {
 
         Money remaining = null;
         if (spendAmount.compareTo(budgetAmount) < 0) {
-            remaining = budget.amount().subtract(actualSpend);
+            remaining = actualSpend != null ? budget.amount().subtract(actualSpend) : budget.amount();
         }
 
         BudgetPeriod period = budget.period();
