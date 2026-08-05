@@ -1,6 +1,6 @@
 package com.financialapp.finances.domain.repository;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.transaction.Transaction;

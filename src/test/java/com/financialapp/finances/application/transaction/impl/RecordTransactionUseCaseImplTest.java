@@ -1,4 +1,5 @@
 package com.financialapp.finances.application.transaction.impl;
+import com.financialapp.commons.core.domain.model.Cbu;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financialapp.commons.messaging.domain.model.OutboxRecord;

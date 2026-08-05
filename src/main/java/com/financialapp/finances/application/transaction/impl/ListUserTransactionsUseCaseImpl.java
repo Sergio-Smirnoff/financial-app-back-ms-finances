@@ -1,6 +1,6 @@
 package com.financialapp.finances.application.transaction.impl;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.CategoryId;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;

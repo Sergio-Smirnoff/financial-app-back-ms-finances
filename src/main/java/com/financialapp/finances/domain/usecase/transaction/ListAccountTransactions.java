@@ -1,6 +1,6 @@
 package com.financialapp.finances.domain.usecase.transaction;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 
 import java.time.LocalDate;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.financialapp.finances.infrastructure.messaging.listener;
 
 import com.financialapp.commons.messaging.infrastructure.messaging.consume.IdempotentEventProcessor;
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.CategoryId;
 import com.financialapp.finances.domain.common.model.Money;
 import com.financialapp.finances.domain.common.model.UserId;

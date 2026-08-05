@@ -2,7 +2,7 @@ package com.financialapp.finances.domain.usecase.transaction.command;
 
 import com.financialapp.finances.domain.common.model.DateRange;
 import com.financialapp.finances.domain.common.model.CategoryId;
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.Money;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.transaction.CursorPage;

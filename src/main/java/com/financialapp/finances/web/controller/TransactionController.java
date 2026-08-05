@@ -1,5 +1,7 @@
 package com.financialapp.finances.web.controller;
 
+import com.financialapp.commons.core.domain.model.Cbu;
+
 import com.financialapp.commons.core.domain.model.PageResult;
 import com.financialapp.commons.core.response.ApiResponse;
 import com.financialapp.commons.web.openapi.ApiErrorCodes;

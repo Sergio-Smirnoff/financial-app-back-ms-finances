@@ -1,6 +1,6 @@
 package com.financialapp.finances.domain.service;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.model.transaction.KindOwnershipCriteria;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;

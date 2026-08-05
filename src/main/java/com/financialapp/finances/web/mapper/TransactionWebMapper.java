@@ -1,7 +1,7 @@
 package com.financialapp.finances.web.mapper;
 
 import com.financialapp.finances.domain.common.model.CategoryId;
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.Money;
 import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.common.model.UserId;

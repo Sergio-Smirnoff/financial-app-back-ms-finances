@@ -1,4 +1,5 @@
 package com.financialapp.finances.domain.common.model;
+import com.financialapp.commons.core.domain.model.Cbu;
 
 import com.financialapp.finances.domain.exception.InvalidCbuException;
 import org.junit.jupiter.api.Test;
