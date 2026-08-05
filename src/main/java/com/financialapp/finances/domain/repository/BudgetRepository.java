@@ -11,5 +11,6 @@ import java.util.Optional;
 public interface BudgetRepository {
     Budget upsert(Budget budget);
     List<Budget> findByUserAndPeriod(UserId userId, BudgetPeriod period);
+    List<Budget> findByPeriod(BudgetPeriod period);
     Optional<Budget> findByUserCategoryAndPeriod(UserId userId, CategoryId categoryId, BudgetPeriod period);
 }

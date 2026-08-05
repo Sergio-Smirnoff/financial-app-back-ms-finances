@@ -53,6 +53,14 @@ public class BudgetRepositoryImpl implements BudgetRepository {
     }
 
     @Override
+    public List<Budget> findByPeriod(BudgetPeriod period) {
+        return jpaRepository.findByYearAndMonth(period.year(), period.month())
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<Budget> findByUserCategoryAndPeriod(UserId userId, CategoryId categoryId, BudgetPeriod period) {
         return jpaRepository.findByUserIdAndCategoryIdAndYearAndMonth(userId.value(), categoryId.value(), period.year(), period.month())
                 .map(mapper::toDomain);

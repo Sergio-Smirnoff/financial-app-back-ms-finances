@@ -32,12 +32,13 @@ public final class Transaction {
     private final LocalDate date;
     private final PaymentMethod paymentMethod;
     private final String note;
+    private final FxSnapshot fxSnapshot;
 
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     private Transaction(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
                         CategoryId categoryId, String description, LocalDate date,
-                        PaymentMethod paymentMethod, String note) {
+                        PaymentMethod paymentMethod, String note, FxSnapshot fxSnapshot) {
         this.userId = Objects.requireNonNull(userId, "userId must not be null");
         this.fromCbu = Objects.requireNonNull(fromCbu, "fromCbu must not be null");
         this.toCbu = Objects.requireNonNull(toCbu, "toCbu must not be null");
@@ -50,31 +51,45 @@ public final class Transaction {
         this.description = normaliseDescription(description);
         this.paymentMethod = paymentMethod != null ? paymentMethod : PaymentMethod.OTHER;
         this.note = normaliseNote(note);
+        this.fxSnapshot = fxSnapshot;
         this.id = id;
     }
 
     public static Transaction create(UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
                                      CategoryId categoryId, String description, LocalDate date) {
-        return create(userId, fromCbu, toCbu, money, categoryId, description, date, PaymentMethod.OTHER, null);
+        return create(userId, fromCbu, toCbu, money, categoryId, description, date, PaymentMethod.OTHER, null, null);
     }
 
     public static Transaction create(UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
                                      CategoryId categoryId, String description, LocalDate date,
                                      PaymentMethod paymentMethod, String note) {
-        return new Transaction(null, userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note);
+        return create(userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note, null);
+    }
+
+    public static Transaction create(UserId userId, Cbu fromCbu, Cbu toCbu, Money money,
+                                     CategoryId categoryId, String description, LocalDate date,
+                                     PaymentMethod paymentMethod, String note, FxSnapshot fxSnapshot) {
+        return new Transaction(null, userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note, fxSnapshot);
     }
 
     public static Transaction reconstitute(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu,
                                            Money money, CategoryId categoryId, String description,
                                            LocalDate date) {
-        return reconstitute(id, userId, fromCbu, toCbu, money, categoryId, description, date, PaymentMethod.OTHER, null);
+        return reconstitute(id, userId, fromCbu, toCbu, money, categoryId, description, date, PaymentMethod.OTHER, null, null);
     }
 
     public static Transaction reconstitute(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu,
                                            Money money, CategoryId categoryId, String description,
                                            LocalDate date, PaymentMethod paymentMethod, String note) {
+        return reconstitute(id, userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note, null);
+    }
+
+    public static Transaction reconstitute(TransactionId id, UserId userId, Cbu fromCbu, Cbu toCbu,
+                                           Money money, CategoryId categoryId, String description,
+                                           LocalDate date, PaymentMethod paymentMethod, String note,
+                                           FxSnapshot fxSnapshot) {
         return new Transaction(Objects.requireNonNull(id, "id must not be null"),
-                userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note);
+                userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note, fxSnapshot);
     }
 
     public Transaction changeDetails(CategoryId categoryId, String description, LocalDate date) {
@@ -82,7 +97,7 @@ public final class Transaction {
     }
 
     public Transaction changeDetails(CategoryId categoryId, String description, LocalDate date, String note) {
-        return new Transaction(id, userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note);
+        return new Transaction(id, userId, fromCbu, toCbu, money, categoryId, description, date, paymentMethod, note, fxSnapshot);
     }
 
     public BigDecimal signedFor(Cbu cbu) {
@@ -167,4 +182,5 @@ public final class Transaction {
     public LocalDate date() { return date; }
     public PaymentMethod paymentMethod() { return paymentMethod; }
     public String note() { return note; }
+    public FxSnapshot fxSnapshot() { return fxSnapshot; }
 }

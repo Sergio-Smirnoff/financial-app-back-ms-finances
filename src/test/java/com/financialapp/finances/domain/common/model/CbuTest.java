@@ -17,17 +17,17 @@ class CbuTest {
 
     @Test void rejectsWrongLength() {
         assertThatThrownBy(() -> new Cbu("12345"))
-            .isInstanceOf(InvalidCbuException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test void rejectsNonDigits() {
         assertThatThrownBy(() -> new Cbu("01700992200000677973AB"))
-            .isInstanceOf(InvalidCbuException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test void rejectsNull() {
         assertThatThrownBy(() -> new Cbu(null))
-            .isInstanceOf(InvalidCbuException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test void exposesAnExternalInstallmentSentinelOfTwentyTwoZeros() {
