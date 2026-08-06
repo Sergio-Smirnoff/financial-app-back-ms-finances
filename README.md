@@ -190,6 +190,8 @@ User identity arrives via the `X-User-Id` header injected by the gateway.
 | GET | `/{id}` | `X-User-Id` | `ApiResponse<TransactionResponse>` (includes paymentMethod, note) |
 | GET | `/uncategorised/count` | `X-User-Id` | `ApiResponse<UncategorisedCountResponse>` |
 | GET | `/summary` | `X-User-Id` + optional `?from=&to=` (ISO date) | `ApiResponse<Map<String, CurrencySummaryResponse>>` |
+| GET | `/summary/monthly` | `X-User-Id` + `?from=&to=` (ISO date) | `ApiResponse<List<MonthlyFlowResponse>>` |
+| GET | `/search` | `X-User-Id` + `?q=&limit=` | `ApiResponse<List<TransactionSearchResponse>>` |
 
 ### BudgetController — `/api/v1/finances/budgets`
 

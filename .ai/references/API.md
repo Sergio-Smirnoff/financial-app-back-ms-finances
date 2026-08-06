@@ -12,6 +12,8 @@ mapping: parent `.ai/references/APP_STRUCTURE.md` — not repeated here.
 | DELETE | `/api/v1/finances/transactions/{id}` | Delete (reverse) a transaction and emit reversal event | `transaction_not_found` |
 | GET | `/api/v1/finances/transactions` | List transactions (user-scoped or internal `?accountCbu=`) | `invalid_cbu` |
 | GET | `/api/v1/finances/transactions/summary` | Ranged spending summary by currency (`?from=&to=`) | `invalid_date_range` |
+| GET | `/api/v1/finances/transactions/summary/monthly` | Ranged monthly income/expense flow series (`?from=&to=`) | `invalid_date_range` |
+| GET | `/api/v1/finances/transactions/search` | Search transactions by description (`?q=&limit=`) | — |
 | GET | `/api/v1/finances/categories` | List user categories with nested active subcategories | — |
 | GET | `/api/v1/finances/categories/{id}` | Get one category by ID | `category_not_found` |
 | POST | `/api/v1/finances/categories` | Create a new category | `category_already_exists`, `invalid_category_name` |

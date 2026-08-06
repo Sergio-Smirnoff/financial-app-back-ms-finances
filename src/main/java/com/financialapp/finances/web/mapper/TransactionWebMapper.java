@@ -15,12 +15,16 @@ import com.financialapp.finances.domain.usecase.transaction.command.RecordTransa
 import com.financialapp.finances.domain.usecase.transaction.command.UpdateTransactionCommand;
 import com.financialapp.finances.web.dto.request.RecordTransactionRequest;
 import com.financialapp.finances.web.dto.request.UpdateTransactionRequest;
+import com.financialapp.finances.domain.model.transaction.MonthlyFlow;
 import com.financialapp.finances.web.dto.response.AccountTransactionResponse;
+import com.financialapp.finances.web.dto.response.MonthlyFlowResponse;
 import com.financialapp.finances.web.dto.response.TransactionResponse;
+import com.financialapp.finances.web.dto.response.TransactionSearchResponse;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.List;
 
 @Component
 public class TransactionWebMapper {
@@ -69,5 +73,39 @@ public class TransactionWebMapper {
                 t.id().value(), accountCbu.cbuNumber(),
                 t.signedFor(accountCbu).toPlainString(), t.money().currency().getCurrencyCode(),
                 t.description(), v.names().category(), v.names().subcategory(), t.date());
+    }
+
+    public TransactionSearchResponse toSearchResponse(ClassifiedTransaction ct) {
+        Transaction t = ct.transaction();
+        String direction = switch (ct.kind()) {
+            case EXPENSE -> "OUT";
+            case INCOME -> "IN";
+            case TRANSFER -> "TRANSFER";
+        };
+        return new TransactionSearchResponse(
+                t.id().value(),
+                t.date(),
+                t.description(),
+                t.money().amount().toPlainString(),
+                t.money().currency().getCurrencyCode(),
+                direction
+        );
+    }
+
+    public List<TransactionSearchResponse> toSearchResponses(List<ClassifiedTransaction> classifiedList) {
+        return classifiedList.stream().map(this::toSearchResponse).toList();
+    }
+
+    public MonthlyFlowResponse toMonthlyFlowResponse(MonthlyFlow flow) {
+        return new MonthlyFlowResponse(
+                flow.month().toString(),
+                flow.currency().getCurrencyCode(),
+                flow.income().toPlainString(),
+                flow.expense().toPlainString()
+        );
+    }
+
+    public List<MonthlyFlowResponse> toMonthlyFlowResponses(List<MonthlyFlow> flows) {
+        return flows.stream().map(this::toMonthlyFlowResponse).toList();
     }
 }

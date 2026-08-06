@@ -51,4 +51,14 @@ public interface TransactionJpaRepository extends JpaRepository<TransactionJpaEn
                             @Param("currency") String currency,
                             @Param("date") LocalDate date,
                             @Param("description") String description);
+
+    @Query("""
+            SELECT t FROM TransactionJpaEntity t
+            WHERE t.userId = :userId
+              AND LOWER(t.description) LIKE LOWER(CONCAT('%', :query, '%'))
+            ORDER BY t.date DESC, t.id DESC
+            """)
+    List<TransactionJpaEntity> searchByDescription(@Param("userId") Long userId,
+                                                   @Param("query") String query,
+                                                   Limit limit);
 }

@@ -49,6 +49,8 @@ class TransactionControllerTest {
     @MockBean ListTransactionsFiltered listTransactionsFiltered;
     @MockBean CountUncategorisedTransactions countUncategorisedTransactions;
     @MockBean GetTransactionDetail getTransactionDetail;
+    @MockBean SearchTransactions searchTransactions;
+    @MockBean GetMonthlyFlow getMonthlyFlow;
     @MockBean CategoryRepository categoryRepository;
     @MockBean TransactionClassifier classifier;
     @MockBean AccountOwnershipGateway ownershipGateway;
@@ -128,5 +130,48 @@ class TransactionControllerTest {
                         .header("X-User-Id", 1L)
                         .param("from", "2026-05-01"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void searchReturnsMatchingTransactions() throws Exception {
+        Cbu from = new Cbu("0001112223334445556667");
+        Cbu to = new Cbu("9998887776665554443332");
+        Transaction tx = Transaction.reconstitute(new TransactionId(1L), new UserId(7L),
+                from, to, new Money(new BigDecimal("12500.00"), ARS), new CategoryId(2L), "Supermercado", LocalDate.of(2026, 7, 4));
+
+        when(searchTransactions.execute(new UserId(7L), "super", 10)).thenReturn(List.of(tx));
+        when(ownershipGateway.ownedAccounts(new UserId(7L))).thenReturn(Set.of(from));
+        when(classifier.classify(eq(tx), any())).thenReturn(TransactionKind.EXPENSE);
+
+        mvc.perform(get("/api/v1/finances/transactions/search")
+                        .header("X-User-Id", 7L)
+                        .param("q", "super")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].description").value("Supermercado"))
+                .andExpect(jsonPath("$.data[0].amount").value("12500.00"))
+                .andExpect(jsonPath("$.data[0].currency").value("ARS"))
+                .andExpect(jsonPath("$.data[0].direction").value("OUT"));
+    }
+
+    @Test
+    void monthlySummaryReturnsFlowSeries() throws Exception {
+        com.financialapp.finances.domain.model.transaction.MonthlyFlow flow =
+                new com.financialapp.finances.domain.model.transaction.MonthlyFlow(
+                        java.time.YearMonth.of(2026, 7), ARS, new BigDecimal("150000.00"), new BigDecimal("85000.00"));
+
+        when(getMonthlyFlow.execute(eq(new UserId(7L)), any(DateRange.class)))
+                .thenReturn(List.of(flow));
+
+        mvc.perform(get("/api/v1/finances/transactions/summary/monthly")
+                        .header("X-User-Id", 7L)
+                        .param("from", "2026-07-01")
+                        .param("to", "2026-07-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].month").value("2026-07"))
+                .andExpect(jsonPath("$.data[0].currency").value("ARS"))
+                .andExpect(jsonPath("$.data[0].income").value("150000.00"))
+                .andExpect(jsonPath("$.data[0].expense").value("85000.00"));
     }
 }

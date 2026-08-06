@@ -23,8 +23,9 @@ class TransactionRepositoryImplTest {
     private final TransactionJpaRepository jpa = mock(TransactionJpaRepository.class);
     private final NamedParameterJdbcTemplate jdbcTemplate = mock(NamedParameterJdbcTemplate.class);
     private final SystemCategoryResolver systemCategoryResolver = mock(SystemCategoryResolver.class);
+    private final com.financialapp.finances.domain.gateway.AccountOwnershipGateway ownershipGateway = mock(com.financialapp.finances.domain.gateway.AccountOwnershipGateway.class);
     private final TransactionRepositoryImpl repo =
-            new TransactionRepositoryImpl(jpa, new TransactionPersistenceMapper(), jdbcTemplate, systemCategoryResolver);
+            new TransactionRepositoryImpl(jpa, new TransactionPersistenceMapper(), jdbcTemplate, systemCategoryResolver, ownershipGateway);
     private static final Currency ARS = Currency.getInstance("ARS");
 
     private Transaction newTx() {
