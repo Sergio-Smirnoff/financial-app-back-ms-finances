@@ -6,6 +6,8 @@ import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.Money;
 import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.common.model.UserId;
+import com.financialapp.finances.domain.common.model.DateRange;
+import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.transaction.*;
 import com.financialapp.finances.domain.repository.TransactionRepository;
 import com.financialapp.finances.domain.service.TransactionClassifier;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +37,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     private final TransactionPersistenceMapper mapper;
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final SystemCategoryResolver systemCategoryResolver;
+    private final AccountOwnershipGateway ownershipGateway;
     private final TransactionClassifier classifier = new TransactionClassifier();
 
     @Override
@@ -203,5 +207,55 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         String sql = "SELECT COUNT(*) FROM finances.transactions WHERE user_id = :userId AND category_id = :unassignedId";
         Long count = jdbcTemplate.queryForObject(sql, params, Long.class);
         return count != null ? count : 0L;
+    }
+
+    @Override
+    public List<Transaction> searchByDescription(UserId userId, String query, int limit) {
+        Limit lim = limit <= 0 ? Limit.of(10) : Limit.of(limit);
+        return jpa.searchByDescription(userId.value(), query, lim)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<MonthlyFlow> monthlyFlow(UserId userId, DateRange range) {
+        Set<Cbu> owned = ownershipGateway != null ? ownershipGateway.ownedAccounts(userId) : Set.of();
+        if (owned.isEmpty()) {
+            return List.of();
+        }
+        Set<String> ownedCbus = owned.stream().map(Cbu::cbuNumber).collect(Collectors.toSet());
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("userId", userId.value())
+                .addValue("fromDate", range.from())
+                .addValue("toDate", range.to())
+                .addValue("ownedCbus", ownedCbus);
+
+        String sql = """
+                SELECT
+                    date_trunc('month', t.date) AS month_start,
+                    t.currency AS currency,
+                    SUM(CASE WHEN t.to_cbu IN (:ownedCbus) AND t.from_cbu NOT IN (:ownedCbus) THEN t.amount ELSE 0 END) AS income,
+                    SUM(CASE WHEN t.from_cbu IN (:ownedCbus) AND t.to_cbu NOT IN (:ownedCbus) THEN t.amount ELSE 0 END) AS expense
+                FROM finances.transactions t
+                WHERE t.user_id = :userId
+                  AND t.date >= :fromDate AND t.date <= :toDate
+                GROUP BY date_trunc('month', t.date), t.currency
+                ORDER BY month_start ASC, t.currency ASC
+                """;
+
+        return jdbcTemplate.query(sql, params, (rs, rowNum) -> {
+            java.sql.Date sqlDate = rs.getDate("month_start");
+            LocalDate date = sqlDate != null ? sqlDate.toLocalDate() : range.from();
+            YearMonth month = YearMonth.from(date);
+            Currency currency = Currency.getInstance(rs.getString("currency"));
+            BigDecimal income = rs.getBigDecimal("income");
+            BigDecimal expense = rs.getBigDecimal("expense");
+            return new MonthlyFlow(
+                    month,
+                    currency,
+                    income != null ? income : BigDecimal.ZERO,
+                    expense != null ? expense : BigDecimal.ZERO
+            );
+        });
     }
 }

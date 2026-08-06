@@ -24,8 +24,9 @@ class TransactionRepositoryImplQueryTest {
     private final TransactionJpaRepository jpa = mock(TransactionJpaRepository.class);
     private final NamedParameterJdbcTemplate jdbcTemplate = mock(NamedParameterJdbcTemplate.class);
     private final SystemCategoryResolver systemCategoryResolver = mock(SystemCategoryResolver.class);
+    private final com.financialapp.finances.domain.gateway.AccountOwnershipGateway ownershipGateway = mock(com.financialapp.finances.domain.gateway.AccountOwnershipGateway.class);
     private final TransactionRepositoryImpl repo =
-            new TransactionRepositoryImpl(jpa, new TransactionPersistenceMapper(), jdbcTemplate, systemCategoryResolver);
+            new TransactionRepositoryImpl(jpa, new TransactionPersistenceMapper(), jdbcTemplate, systemCategoryResolver, ownershipGateway);
 
     private TransactionJpaEntity entity(long id) {
         return TransactionJpaEntity.builder().id(id).userId(42L)

@@ -14,6 +14,8 @@ import com.financialapp.finances.domain.usecase.transaction.ListAccountTransacti
 import com.financialapp.finances.domain.usecase.transaction.ListTransactionsFiltered;
 import com.financialapp.finances.domain.usecase.transaction.RecordTransaction;
 import com.financialapp.finances.domain.usecase.transaction.UpdateTransaction;
+import com.financialapp.finances.domain.usecase.transaction.SearchTransactions;
+import com.financialapp.finances.domain.usecase.transaction.GetMonthlyFlow;
 import com.financialapp.finances.domain.model.category.CategoryNames;
 import com.financialapp.finances.domain.usecase.transaction.AccountTransactionView;
 import com.financialapp.finances.web.mapper.TransactionWebMapper;
@@ -49,6 +51,8 @@ class AccountTransactionContractTest {
     @MockBean ListTransactionsFiltered listTransactionsFiltered;
     @MockBean CountUncategorisedTransactions countUncategorisedTransactions;
     @MockBean GetTransactionDetail getTransactionDetail;
+    @MockBean SearchTransactions searchTransactions;
+    @MockBean GetMonthlyFlow getMonthlyFlow;
     @MockBean CategoryRepository categoryRepository;
     @MockBean TransactionClassifier classifier;
     @MockBean AccountOwnershipGateway ownershipGateway;

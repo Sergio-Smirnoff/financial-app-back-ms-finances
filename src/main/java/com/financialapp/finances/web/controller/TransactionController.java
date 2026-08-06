@@ -47,6 +47,8 @@ public class TransactionController {
     private final ListTransactionsFiltered listTransactionsFiltered;
     private final CountUncategorisedTransactions countUncategorisedTransactions;
     private final GetTransactionDetail getTransactionDetail;
+    private final SearchTransactions searchTransactions;
+    private final GetMonthlyFlow getMonthlyFlow;
     private final CategoryRepository categoryRepository;
     private final TransactionClassifier classifier;
     private final AccountOwnershipGateway ownershipGateway;
@@ -168,6 +170,29 @@ public class TransactionController {
                                 s.balance().toPlainString()),
                         (a, b) -> a, LinkedHashMap::new));
         return ResponseEntity.ok(ApiResponse.ok(byCurrency));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<TransactionSearchResponse>>> search(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestParam String q,
+            @RequestParam(defaultValue = "10") int limit) {
+        UserId user = new UserId(userId);
+        List<Transaction> found = searchTransactions.execute(user, q, limit);
+        Set<Cbu> ownedCbus = ownershipGateway.ownedAccounts(user);
+        List<ClassifiedTransaction> classified = found.stream()
+                .map(t -> new ClassifiedTransaction(t, classifier.classify(t, ownedCbus)))
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(mapper.toSearchResponses(classified)));
+    }
+
+    @GetMapping("/summary/monthly")
+    public ResponseEntity<ApiResponse<List<MonthlyFlowResponse>>> monthlySummary(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        List<MonthlyFlow> flows = getMonthlyFlow.execute(new UserId(userId), new DateRange(from, to));
+        return ResponseEntity.ok(ApiResponse.ok(mapper.toMonthlyFlowResponses(flows)));
     }
 
     @GetMapping("/{id}")

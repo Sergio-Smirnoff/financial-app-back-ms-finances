@@ -40,4 +40,9 @@ public interface TransactionRepository {
             com.financialapp.finances.domain.model.transaction.CursorPage page);
 
     long countUncategorised(UserId userId);
+
+    List<Transaction> searchByDescription(UserId userId, String query, int limit);
+
+    List<com.financialapp.finances.domain.model.transaction.MonthlyFlow> monthlyFlow(
+            UserId userId, com.financialapp.finances.domain.common.model.DateRange range);
 }
