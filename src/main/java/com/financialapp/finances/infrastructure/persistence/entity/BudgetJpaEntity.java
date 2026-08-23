@@ -2,6 +2,8 @@ package com.financialapp.finances.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -34,7 +36,8 @@ public class BudgetJpaEntity {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false, length = 3)
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "currency", nullable = false, length = 3)
     private String currency;
 
     @Column(name = "alert_threshold_pct", precision = 5, scale = 2)
