@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 /**
  * Partial edit of an existing transaction. The amount, currency and the two accounts are frozen;
- * only category, description and date are editable. Each editable field is optional: a {@code null}
+ * only category, description, date and note are editable. Each editable field is optional: a {@code null}
  * field means "leave unchanged".
  */
 public record UpdateTransactionCommand(
@@ -16,4 +16,10 @@ public record UpdateTransactionCommand(
         TransactionId id,
         CategoryId categoryId,
         String description,
-        LocalDate date) {}
+        LocalDate date,
+        String note) {
+    public UpdateTransactionCommand(UserId userId, TransactionId id, CategoryId categoryId,
+                                    String description, LocalDate date) {
+        this(userId, id, categoryId, description, date, null);
+    }
+}

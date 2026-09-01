@@ -2,7 +2,7 @@ package com.financialapp.finances.infrastructure.messaging.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financialapp.commons.messaging.domain.model.OutboxRecord;
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.event.TransactionReversed;
 import org.junit.jupiter.api.Test;

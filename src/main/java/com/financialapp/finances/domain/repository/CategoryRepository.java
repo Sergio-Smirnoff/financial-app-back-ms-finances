@@ -27,4 +27,7 @@ public interface CategoryRepository {
      * the ms-banks account view is a cross-owner callback with no userId. Empty if id is unknown.
      */
     Optional<CategoryNames> findNamesById(CategoryId id);
+
+    /** Resolve the system 'Unassigned' category id. */
+    Optional<CategoryId> findUnassignedCategory();
 }

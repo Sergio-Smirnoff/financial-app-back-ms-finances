@@ -1,6 +1,6 @@
 package com.financialapp.finances.application.transaction.impl;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.OwnedAccount;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.gateway.DomainEventPublisher;
@@ -25,6 +25,11 @@ import java.util.stream.Collectors;
  * case) — this class never constructs a domain event, so the application layer stays free of the
  * {@code domain.event} package (enforced by {@code LayeredArchitectureTest}).
  */
+import com.financialapp.finances.domain.gateway.FxRateGateway;
+import com.financialapp.finances.domain.model.transaction.FxSnapshot;
+
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class RecordTransactionUseCaseImpl implements RecordTransaction {
@@ -34,15 +39,19 @@ public class RecordTransactionUseCaseImpl implements RecordTransaction {
     private final TransactionPosting transactionPosting;
     private final TransactionCurrencyValidator currencyValidator;
     private final DomainEventPublisher domainEventPublisher;
+    private final FxRateGateway fxRateGateway;
 
     @Override
     @Transactional
     public Transaction execute(RecordTransactionCommand command) {
         Set<OwnedAccount> owned = ownershipGateway.ownedAccountsWithCurrency(command.userId());
 
+        Optional<FxSnapshot> fxSnapshot = fxRateGateway.getRatesForDate(command.date());
+
         Transaction tx = Transaction.create(
                 command.userId(), command.fromCbu(), command.toCbu(),
-                command.money(), command.categoryId(), command.description(), command.date());
+                command.money(), command.categoryId(), command.description(), command.date(),
+                command.paymentMethod(), command.note(), fxSnapshot.orElse(null));
 
         // Reject before persisting: every owned side must be held in the transaction's currency.
         currencyValidator.validate(tx, owned);

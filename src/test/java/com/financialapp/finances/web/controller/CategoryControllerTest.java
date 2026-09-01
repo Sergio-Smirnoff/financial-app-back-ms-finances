@@ -41,6 +41,7 @@ class CategoryControllerTest {
     @MockBean ArchiveSubcategory archiveSubcategory;
     @MockBean RenameSubcategory renameSubcategory;
     @MockBean RestoreSubcategory restoreSubcategory;
+    @MockBean GetCategorySpend getCategorySpend;
 
     private Category food() {
         return Category.reconstitute(new CategoryId(1L), new UserId(42L),

@@ -1,4 +1,5 @@
 package com.financialapp.finances.application.transaction.impl;
+import com.financialapp.commons.core.domain.model.Cbu;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financialapp.commons.messaging.domain.model.OutboxRecord;
@@ -35,8 +36,9 @@ class RecordTransactionUseCaseImplTest {
     private final TransactionRepository repo = mock(TransactionRepository.class);
     private final AccountOwnershipGateway ownership = mock(AccountOwnershipGateway.class);
     private final DomainEventPublisher publisher = mock(DomainEventPublisher.class);
+    private final com.financialapp.finances.domain.gateway.FxRateGateway fxRateGateway = mock(com.financialapp.finances.domain.gateway.FxRateGateway.class);
     private final RecordTransactionUseCaseImpl useCase = new RecordTransactionUseCaseImpl(
-            repo, ownership, new TransactionPosting(), new TransactionCurrencyValidator(), publisher);
+            repo, ownership, new TransactionPosting(), new TransactionCurrencyValidator(), publisher, fxRateGateway);
 
     private final Cbu mine = new Cbu("0001112223334445556667");
     private final Cbu other = new Cbu("9998887776665554443332");

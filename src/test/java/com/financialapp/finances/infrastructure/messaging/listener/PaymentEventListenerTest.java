@@ -7,7 +7,7 @@ import com.financialapp.commons.messaging.domain.gateway.ProcessedEventGateway;
 import com.financialapp.commons.messaging.domain.model.EventId;
 import com.financialapp.commons.messaging.infrastructure.messaging.consume.IdempotentEventProcessor;
 import com.financialapp.commons.messaging.infrastructure.messaging.serde.CloudEventSerde;
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.exception.UnsupportedCurrencyException;
 import com.financialapp.finances.domain.gateway.SupportedCurrencies;
 import com.financialapp.finances.domain.model.transaction.Transaction;

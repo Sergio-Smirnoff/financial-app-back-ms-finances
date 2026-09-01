@@ -1,5 +1,7 @@
 package com.financialapp.finances.domain.common.model;
 
+import com.financialapp.commons.core.domain.model.Cbu;
+
 import java.util.Currency;
 import java.util.Objects;
 

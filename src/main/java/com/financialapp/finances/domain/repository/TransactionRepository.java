@@ -1,6 +1,6 @@
 package com.financialapp.finances.domain.repository;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.TransactionId;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.transaction.Transaction;
@@ -34,4 +34,15 @@ public interface TransactionRepository {
                             BigDecimal amount, String currency, LocalDate date, String description);
 
     void delete(Transaction transaction);
+
+    com.financialapp.commons.core.domain.model.PageResult<Transaction> findFiltered(
+            com.financialapp.finances.domain.model.transaction.TransactionFilter filter,
+            com.financialapp.finances.domain.model.transaction.CursorPage page);
+
+    long countUncategorised(UserId userId);
+
+    List<Transaction> searchByDescription(UserId userId, String query, int limit);
+
+    List<com.financialapp.finances.domain.model.transaction.MonthlyFlow> monthlyFlow(
+            UserId userId, com.financialapp.finances.domain.common.model.DateRange range);
 }

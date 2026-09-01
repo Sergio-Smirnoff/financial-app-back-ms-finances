@@ -1,6 +1,6 @@
 package com.financialapp.finances.domain.exception.transaction;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.exception.DomainErrorCode;
 import com.financialapp.commons.core.error.DomainException;
 

@@ -44,6 +44,24 @@ public class TransactionJpaEntity {
     @Column(nullable = false)
     private LocalDate date;
 
+    @Column(name = "payment_method", length = 20)
+    private String paymentMethod;
+
+    @Column(length = 500)
+    private String note;
+
+    @Column(name = "mep_rate", precision = 12, scale = 4)
+    private BigDecimal mepRate;
+
+    @Column(name = "ccl_rate", precision = 12, scale = 4)
+    private BigDecimal cclRate;
+
+    @Column(name = "oficial_rate", precision = 12, scale = 4)
+    private BigDecimal oficialRate;
+
+    @Column(name = "rate_date")
+    private LocalDate rateDate;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

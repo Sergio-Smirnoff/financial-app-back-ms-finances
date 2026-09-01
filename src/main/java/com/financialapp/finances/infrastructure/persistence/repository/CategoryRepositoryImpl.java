@@ -35,6 +35,12 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     private final CategoryJpaRepository jpa;
     private final CategoryPersistenceMapper mapper;
     private final JdbcTemplate jdbcTemplate;
+    private final SystemCategoryResolver systemCategoryResolver;
+
+    @Override
+    public Optional<CategoryId> findUnassignedCategory() {
+        return systemCategoryResolver.findUnassignedCategoryId().map(CategoryId::new);
+    }
 
     @Override
     public Optional<Category> findByIdOwnedBy(CategoryId id, UserId userId) {

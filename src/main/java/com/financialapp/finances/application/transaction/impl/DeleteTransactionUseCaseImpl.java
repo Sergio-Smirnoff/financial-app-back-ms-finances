@@ -1,6 +1,6 @@
 package com.financialapp.finances.application.transaction.impl;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.gateway.DomainEventPublisher;
 import com.financialapp.finances.domain.model.transaction.BalanceMovement;

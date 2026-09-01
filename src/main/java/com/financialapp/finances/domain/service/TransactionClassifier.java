@@ -1,6 +1,7 @@
 package com.financialapp.finances.domain.service;
 
-import com.financialapp.finances.domain.common.model.Cbu;
+import com.financialapp.commons.core.domain.model.Cbu;
+import com.financialapp.finances.domain.model.transaction.KindOwnershipCriteria;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
 
@@ -26,5 +27,14 @@ public final class TransactionClassifier {
         }
         throw new IllegalArgumentException(
             "transaction touches none of the user's accounts; cannot classify");
+    }
+
+    public KindOwnershipCriteria criteriaFor(TransactionKind kind) {
+        if (kind == null) return null;
+        return switch (kind) {
+            case TRANSFER -> new KindOwnershipCriteria(true, true);
+            case EXPENSE -> new KindOwnershipCriteria(true, false);
+            case INCOME -> new KindOwnershipCriteria(false, true);
+        };
     }
 }
