@@ -9,18 +9,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
-/**
- * Enforces DDD / hexagonal layer boundaries. Dependencies point inward toward the domain:
- * web -> application -> domain, infrastructure -> (application, domain). The domain depends
- * on nothing else in the codebase and is free of framework/persistence imports.
- *
- * If a rule fails, the fix is to remove the offending dependency, not to weaken the rule.
- *
- * Only classes inside the four declared layer packages are analyzed
- * (consideringOnlyDependenciesInLayers). The legacy flat packages (model, service,
- * controller, ...) live outside these and are ignored until they are drained into the
- * layers by a later migration spec.
- */
 @AnalyzeClasses(
         packages = "com.financialapp.finances",
         importOptions = ImportOption.DoNotIncludeTests.class)
