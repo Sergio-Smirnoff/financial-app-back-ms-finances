@@ -101,6 +101,47 @@ class TransactionControllerTest {
     }
 
     @Test
+    void listAcceptsRepeatedCategoryAndAccountParamsWithMethodAndQuery() throws Exception {
+        when(listTransactionsFiltered.execute(any()))
+                .thenReturn(new PageResult<>(List.of(), false, null, 0L));
+        when(ownershipGateway.ownedAccounts(new UserId(42L))).thenReturn(Set.of());
+
+        mvc.perform(get("/api/v1/finances/transactions")
+                        .header("X-User-Id", 42L)
+                        .param("categoryIds", "5", "9")
+                        .param("accountCbus", "0001112223334445556667")
+                        .param("paymentMethod", "CREDIT_CARD")
+                        .param("q", "super")
+                        .param("size", "10"))
+                .andExpect(status().isOk());
+
+        org.mockito.ArgumentCaptor<com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand> command =
+                org.mockito.ArgumentCaptor.forClass(com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand.class);
+        org.mockito.Mockito.verify(listTransactionsFiltered).execute(command.capture());
+        org.assertj.core.api.Assertions.assertThat(command.getValue().categoryIds()).containsExactly(new CategoryId(5L), new CategoryId(9L));
+        org.assertj.core.api.Assertions.assertThat(command.getValue().accountCbus()).containsExactly(new Cbu("0001112223334445556667"));
+        org.assertj.core.api.Assertions.assertThat(command.getValue().paymentMethod()).isEqualTo(com.financialapp.finances.domain.model.transaction.PaymentMethod.CREDIT_CARD);
+        org.assertj.core.api.Assertions.assertThat(command.getValue().descriptionQuery()).isEqualTo("super");
+    }
+
+    @Test
+    void listIgnoresAnUnknownPaymentMethodInsteadOfFailing() throws Exception {
+        when(listTransactionsFiltered.execute(any()))
+                .thenReturn(new PageResult<>(List.of(), false, null, 0L));
+        when(ownershipGateway.ownedAccounts(new UserId(42L))).thenReturn(Set.of());
+
+        mvc.perform(get("/api/v1/finances/transactions")
+                        .header("X-User-Id", 42L)
+                        .param("paymentMethod", "NOT_A_METHOD"))
+                .andExpect(status().isOk());
+
+        org.mockito.ArgumentCaptor<com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand> command =
+                org.mockito.ArgumentCaptor.forClass(com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand.class);
+        org.mockito.Mockito.verify(listTransactionsFiltered).execute(command.capture());
+        org.assertj.core.api.Assertions.assertThat(command.getValue().paymentMethod()).isNull();
+    }
+
+    @Test
     void countUncategorisedReturnsCount() throws Exception {
         when(countUncategorisedTransactions.execute(new UserId(42L))).thenReturn(7L);
 

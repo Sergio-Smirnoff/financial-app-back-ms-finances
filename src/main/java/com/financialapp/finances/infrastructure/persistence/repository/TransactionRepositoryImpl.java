@@ -93,14 +93,14 @@ public class TransactionRepositoryImpl implements TransactionRepository {
 
         StringBuilder whereSql = new StringBuilder(" WHERE t.user_id = :userId");
 
-        if (filter.accountCbu() != null) {
-            whereSql.append(" AND (t.from_cbu = :accountCbu OR t.to_cbu = :accountCbu)");
-            params.addValue("accountCbu", filter.accountCbu().cbuNumber());
+        if (!filter.accountCbus().isEmpty()) {
+            whereSql.append(" AND (t.from_cbu IN (:accountCbus) OR t.to_cbu IN (:accountCbus))");
+            params.addValue("accountCbus", filter.accountCbus().stream().map(Cbu::cbuNumber).toList());
         }
 
-        if (filter.categoryId() != null) {
-            whereSql.append(" AND t.category_id = :categoryId");
-            params.addValue("categoryId", filter.categoryId().value());
+        if (!filter.categoryIds().isEmpty()) {
+            whereSql.append(" AND t.category_id IN (:categoryIds)");
+            params.addValue("categoryIds", filter.categoryIds().stream().map(CategoryId::value).toList());
         }
 
         if (filter.dateRange() != null) {
@@ -126,6 +126,16 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         if (filter.amountMax() != null) {
             whereSql.append(" AND t.amount <= :amountMax");
             params.addValue("amountMax", filter.amountMax().amount());
+        }
+
+        if (filter.paymentMethod() != null) {
+            whereSql.append(" AND COALESCE(t.payment_method, 'OTHER') = :paymentMethod");
+            params.addValue("paymentMethod", filter.paymentMethod().name());
+        }
+
+        if (filter.descriptionQuery() != null) {
+            whereSql.append(" AND LOWER(t.description) LIKE LOWER(:descriptionQuery)");
+            params.addValue("descriptionQuery", "%" + filter.descriptionQuery() + "%");
         }
 
         if (filter.kind() != null) {
