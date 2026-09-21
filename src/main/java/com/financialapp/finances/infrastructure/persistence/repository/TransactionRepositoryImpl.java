@@ -93,14 +93,14 @@ public class TransactionRepositoryImpl implements TransactionRepository {
 
         StringBuilder whereSql = new StringBuilder(" WHERE t.user_id = :userId");
 
-        if (filter.accountCbu() != null) {
-            whereSql.append(" AND (t.from_cbu = :accountCbu OR t.to_cbu = :accountCbu)");
-            params.addValue("accountCbu", filter.accountCbu().cbuNumber());
+        if (!filter.accountCbus().isEmpty()) {
+            whereSql.append(" AND (t.from_cbu IN (:accountCbus) OR t.to_cbu IN (:accountCbus))");
+            params.addValue("accountCbus", filter.accountCbus().stream().map(Cbu::cbuNumber).toList());
         }
 
-        if (filter.categoryId() != null) {
-            whereSql.append(" AND t.category_id = :categoryId");
-            params.addValue("categoryId", filter.categoryId().value());
+        if (!filter.categoryIds().isEmpty()) {
+            whereSql.append(" AND t.category_id IN (:categoryIds)");
+            params.addValue("categoryIds", filter.categoryIds().stream().map(CategoryId::value).toList());
         }
 
         if (filter.dateRange() != null) {
@@ -126,6 +126,16 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         if (filter.amountMax() != null) {
             whereSql.append(" AND t.amount <= :amountMax");
             params.addValue("amountMax", filter.amountMax().amount());
+        }
+
+        if (filter.paymentMethod() != null) {
+            whereSql.append(" AND COALESCE(t.payment_method, 'OTHER') = :paymentMethod");
+            params.addValue("paymentMethod", filter.paymentMethod().name());
+        }
+
+        if (filter.descriptionQuery() != null) {
+            whereSql.append(" AND LOWER(t.description) LIKE LOWER(:descriptionQuery)");
+            params.addValue("descriptionQuery", "%" + filter.descriptionQuery() + "%");
         }
 
         if (filter.kind() != null) {
@@ -164,8 +174,14 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         int pageSize = page.size();
         params.addValue("pageSize", pageSize + 1);
 
+        String offsetSql = "";
+        if (page.offset() != null && page.offset() > 0) {
+            offsetSql = " OFFSET :rowOffset";
+            params.addValue("rowOffset", page.offset());
+        }
+
         String selectSql = "SELECT t.id, t.user_id, t.from_cbu, t.to_cbu, t.amount, t.currency, t.category_id, t.description, t.date, t.payment_method, t.note " +
-                "FROM finances.transactions t" + whereSql + " ORDER BY t.date DESC, t.id DESC LIMIT :pageSize";
+                "FROM finances.transactions t" + whereSql + " ORDER BY t.date DESC, t.id DESC LIMIT :pageSize" + offsetSql;
 
         List<Transaction> rows = jdbcTemplate.query(selectSql, params, (rs, rowNum) -> {
             String pmStr = rs.getString("payment_method");

@@ -10,7 +10,7 @@ mapping: parent `.ai/references/APP_STRUCTURE.md` — not repeated here.
 | POST | `/api/v1/finances/transactions` | Record a new account-to-account transaction | `invalid_cbu`, `same_account_transfer`, `invalid_money`, `unsupported_currency`, `category_not_found` |
 | PUT | `/api/v1/finances/transactions/{id}` | Update category, description or date of a transaction | `transaction_not_found`, `category_not_found` |
 | DELETE | `/api/v1/finances/transactions/{id}` | Delete (reverse) a transaction and emit reversal event | `transaction_not_found` |
-| GET | `/api/v1/finances/transactions` | List transactions (user-scoped or internal `?accountCbu=`) | `invalid_cbu` |
+| GET | `/api/v1/finances/transactions` | List transactions: filtered (`?categoryIds=&accountCbus=&paymentMethod=&q=&page=&size=`) or user-scoped/internal (`?accountCbu=`). `page` (0-based) is honoured only when `cursor` is absent. `paymentMethod` matching uses `COALESCE(payment_method,'OTHER')`. | `invalid_cbu` |
 | GET | `/api/v1/finances/transactions/summary` | Ranged spending summary by currency (`?from=&to=`) | `invalid_date_range` |
 | GET | `/api/v1/finances/transactions/summary/monthly` | Ranged monthly income/expense flow series (`?from=&to=`) | `invalid_date_range` |
 | GET | `/api/v1/finances/transactions/search` | Search transactions by description (`?q=&limit=`) | — |
