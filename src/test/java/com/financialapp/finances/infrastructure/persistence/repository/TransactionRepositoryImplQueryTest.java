@@ -104,4 +104,24 @@ class TransactionRepositoryImplQueryTest {
         assertThat(params.getValue().getValue("paymentMethod")).isEqualTo("CREDIT_CARD");
         assertThat(params.getValue().getValue("descriptionQuery")).isEqualTo("%super%");
     }
+
+    @Test
+    void findFilteredAppendsAnOffsetWhenNoCursorIsGiven() {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Long.class)))
+                .thenReturn(0L);
+        when(jdbcTemplate.query(anyString(), any(MapSqlParameterSource.class), ArgumentMatchers.<RowMapper<Transaction>>any()))
+                .thenReturn(List.of());
+
+        TransactionFilter filter = new TransactionFilter(
+                new UserId(42L), Set.of(), List.of(), List.of(), null, null, false, null, null, null, null);
+
+        repo.findFiltered(filter, new CursorPage(null, 20, 2));
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<MapSqlParameterSource> params = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbcTemplate).query(sql.capture(), params.capture(), ArgumentMatchers.<RowMapper<Transaction>>any());
+
+        assertThat(sql.getValue()).contains("LIMIT :pageSize OFFSET :rowOffset");
+        assertThat(params.getValue().getValue("rowOffset")).isEqualTo(40);
+    }
 }

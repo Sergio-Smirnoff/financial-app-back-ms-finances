@@ -101,13 +101,15 @@ public class TransactionController {
             @RequestParam(value = "amountMin", required = false) String amountMinStr,
             @RequestParam(value = "amountMax", required = false) String amountMaxStr,
             @RequestParam(value = "cursor", required = false) String cursor,
+            @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false) Integer size) {
 
         // Legacy ms-banks account-scoped callback (no user context, specific accountCbu and no paging/filter params)
         if (accountCbu != null && cursor == null && size == null && categoryId == null && kindStr == null
                 && !onlyUncategorised && amountMinStr == null && amountMaxStr == null
                 && accountCbus == null && categoryIds == null
-                && paymentMethodStr == null && descriptionQuery == null) {
+                && paymentMethodStr == null && descriptionQuery == null
+                && page == null) {
             Cbu cbu = new Cbu(accountCbu);
             List<AccountTransactionResponse> rows = listAccountTransactions.execute(cbu, limit, from, to)
                     .stream().map(v -> mapper.toAccountResponse(v, cbu)).toList();
@@ -135,7 +137,7 @@ public class TransactionController {
         Money maxMoney = amountMaxStr != null ? new Money(new BigDecimal(amountMaxStr), Currency.getInstance("ARS")) : null;
         int pageSize = size != null ? size : (limit != null ? limit : 50);
 
-        CursorPage cursorPage = new CursorPage(cursor, pageSize);
+        CursorPage cursorPage = new CursorPage(cursor, pageSize, page);
         TransactionFilterCommand command = new TransactionFilterCommand(
                 uId, List.copyOf(cbuList), List.copyOf(categoryIdList), dateRange, kind, onlyUncategorised,
                 minMoney, maxMoney, paymentMethod, descriptionQuery, cursorPage);

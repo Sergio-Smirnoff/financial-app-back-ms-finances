@@ -174,8 +174,14 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         int pageSize = page.size();
         params.addValue("pageSize", pageSize + 1);
 
+        String offsetSql = "";
+        if (page.offset() != null && page.offset() > 0) {
+            offsetSql = " OFFSET :rowOffset";
+            params.addValue("rowOffset", page.offset());
+        }
+
         String selectSql = "SELECT t.id, t.user_id, t.from_cbu, t.to_cbu, t.amount, t.currency, t.category_id, t.description, t.date, t.payment_method, t.note " +
-                "FROM finances.transactions t" + whereSql + " ORDER BY t.date DESC, t.id DESC LIMIT :pageSize";
+                "FROM finances.transactions t" + whereSql + " ORDER BY t.date DESC, t.id DESC LIMIT :pageSize" + offsetSql;
 
         List<Transaction> rows = jdbcTemplate.query(selectSql, params, (rs, rowNum) -> {
             String pmStr = rs.getString("payment_method");

@@ -142,6 +142,24 @@ class TransactionControllerTest {
     }
 
     @Test
+    void listTranslatesThePageNumberIntoARowOffset() throws Exception {
+        when(listTransactionsFiltered.execute(any()))
+                .thenReturn(new PageResult<>(List.of(), false, null, 0L));
+        when(ownershipGateway.ownedAccounts(new UserId(42L))).thenReturn(Set.of());
+
+        mvc.perform(get("/api/v1/finances/transactions")
+                        .header("X-User-Id", 42L)
+                        .param("page", "2")
+                        .param("size", "20"))
+                .andExpect(status().isOk());
+
+        org.mockito.ArgumentCaptor<com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand> command =
+                org.mockito.ArgumentCaptor.forClass(com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand.class);
+        org.mockito.Mockito.verify(listTransactionsFiltered).execute(command.capture());
+        org.assertj.core.api.Assertions.assertThat(command.getValue().page().offset()).isEqualTo(40);
+    }
+
+    @Test
     void countUncategorisedReturnsCount() throws Exception {
         when(countUncategorisedTransactions.execute(new UserId(42L))).thenReturn(7L);
 
