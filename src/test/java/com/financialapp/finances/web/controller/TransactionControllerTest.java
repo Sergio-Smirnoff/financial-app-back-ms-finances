@@ -6,6 +6,7 @@ import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.category.CategoryNames;
 import com.financialapp.finances.domain.usecase.transaction.AccountTransactionView;
+import com.financialapp.finances.domain.model.transaction.DescriptionQuery;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
 import com.financialapp.finances.domain.model.transaction.TransactionSummary;
@@ -121,7 +122,7 @@ class TransactionControllerTest {
         org.assertj.core.api.Assertions.assertThat(command.getValue().categoryIds()).containsExactly(new CategoryId(5L), new CategoryId(9L));
         org.assertj.core.api.Assertions.assertThat(command.getValue().accountCbus()).containsExactly(new Cbu("0001112223334445556667"));
         org.assertj.core.api.Assertions.assertThat(command.getValue().paymentMethod()).isEqualTo(com.financialapp.finances.domain.model.transaction.PaymentMethod.CREDIT_CARD);
-        org.assertj.core.api.Assertions.assertThat(command.getValue().descriptionQuery()).isEqualTo("super");
+        org.assertj.core.api.Assertions.assertThat(command.getValue().descriptionQuery()).isEqualTo(new DescriptionQuery("super"));
     }
 
     @Test

@@ -136,8 +136,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         }
 
         if (filter.descriptionQuery() != null) {
-            whereSql.append(" AND LOWER(t.description) LIKE LOWER(:descriptionQuery)");
-            params.addValue("descriptionQuery", "%" + filter.descriptionQuery() + "%");
+            whereSql.append(" AND LOWER(t.description) LIKE LOWER(:descriptionQuery) ESCAPE '\\'");
+            params.addValue("descriptionQuery", filter.descriptionQuery().containsPattern());
         }
 
         if (filter.kind() != null) {
@@ -230,7 +230,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     @Override
     public List<Transaction> searchByDescription(UserId userId, String query, int limit) {
         Limit lim = limit <= 0 ? Limit.of(10) : Limit.of(limit);
-        return jpa.searchByDescription(userId.value(), query, lim)
+        return jpa.searchByDescription(userId.value(), new DescriptionQuery(query).containsPattern(), lim)
                 .stream().map(mapper::toDomain).toList();
     }
 

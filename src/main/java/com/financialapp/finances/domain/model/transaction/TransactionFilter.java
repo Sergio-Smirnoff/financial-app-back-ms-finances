@@ -20,12 +20,11 @@ public record TransactionFilter(
         Money amountMin,
         Money amountMax,
         PaymentMethod paymentMethod,
-        String descriptionQuery) {
+        DescriptionQuery descriptionQuery) {
 
     public TransactionFilter {
         ownedAccounts = ownedAccounts != null ? Set.copyOf(ownedAccounts) : Set.of();
         accountCbus = accountCbus != null ? List.copyOf(accountCbus) : List.of();
         categoryIds = categoryIds != null ? List.copyOf(categoryIds) : List.of();
-        descriptionQuery = descriptionQuery != null && !descriptionQuery.isBlank() ? descriptionQuery.trim() : null;
     }
 }

@@ -3,6 +3,7 @@ import com.financialapp.commons.core.domain.model.Cbu;
 
 import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.model.transaction.CursorPage;
+import com.financialapp.finances.domain.model.transaction.DescriptionQuery;
 import com.financialapp.finances.domain.model.transaction.PaymentMethod;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionFilter;
@@ -88,7 +89,7 @@ class TransactionRepositoryImplQueryTest {
                 List.of(new CategoryId(5L), new CategoryId(9L)),
                 null, null, false, null, null,
                 PaymentMethod.CREDIT_CARD,
-                "super");
+                new DescriptionQuery("super"));
 
         repo.findFiltered(filter, new CursorPage(null, 20));
 
@@ -124,6 +125,27 @@ class TransactionRepositoryImplQueryTest {
 
         assertThat(sql.getValue()).contains("LIMIT :pageSize OFFSET :rowOffset");
         assertThat(params.getValue().getValue("rowOffset")).isEqualTo(40);
+    }
+
+    @Test
+    void findFilteredBindsAnEscapedContainsPatternWithAnEscapeClause() {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Long.class)))
+                .thenReturn(0L);
+        when(jdbcTemplate.query(anyString(), any(MapSqlParameterSource.class), ArgumentMatchers.<RowMapper<Transaction>>any()))
+                .thenReturn(List.of());
+
+        TransactionFilter filter = new TransactionFilter(
+                new UserId(42L), Set.of(), List.of(), List.of(),
+                null, null, false, null, null, null, new DescriptionQuery("50%"));
+
+        repo.findFiltered(filter, new CursorPage(null, 20));
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<MapSqlParameterSource> params = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbcTemplate).query(sql.capture(), params.capture(), ArgumentMatchers.<RowMapper<Transaction>>any());
+
+        assertThat(sql.getValue()).contains("LOWER(t.description) LIKE LOWER(:descriptionQuery) ESCAPE '\\'");
+        assertThat(params.getValue().getValue("descriptionQuery")).isEqualTo("%50\\%%");
     }
 
     @Test

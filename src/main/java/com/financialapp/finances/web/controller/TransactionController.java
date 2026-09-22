@@ -91,7 +91,7 @@ public class TransactionController {
             @RequestParam(value = "accountCbus", required = false) List<String> accountCbus,
             @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
             @RequestParam(value = "paymentMethod", required = false) String paymentMethodStr,
-            @RequestParam(value = "q", required = false) String descriptionQuery,
+            @RequestParam(value = "q", required = false) String descriptionQueryParam,
             @RequestParam(value = "limit", required = false) Integer limit,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -108,7 +108,7 @@ public class TransactionController {
         if (accountCbu != null && cursor == null && size == null && categoryId == null && kindStr == null
                 && !onlyUncategorised && amountMinStr == null && amountMaxStr == null
                 && accountCbus == null && categoryIds == null
-                && paymentMethodStr == null && descriptionQuery == null
+                && paymentMethodStr == null && descriptionQueryParam == null
                 && page == null) {
             Cbu cbu = new Cbu(accountCbu);
             List<AccountTransactionResponse> rows = listAccountTransactions.execute(cbu, limit, from, to)
@@ -136,11 +136,14 @@ public class TransactionController {
         Money minMoney = amountMinStr != null ? new Money(new BigDecimal(amountMinStr), Currency.getInstance("ARS")) : null;
         Money maxMoney = amountMaxStr != null ? new Money(new BigDecimal(amountMaxStr), Currency.getInstance("ARS")) : null;
         int pageSize = size != null ? size : (limit != null ? limit : 50);
+        DescriptionQuery description = descriptionQueryParam != null && !descriptionQueryParam.isBlank()
+                ? new DescriptionQuery(descriptionQueryParam)
+                : null;
 
         CursorPage cursorPage = new CursorPage(cursor, pageSize, page);
         TransactionFilterCommand command = new TransactionFilterCommand(
                 uId, List.copyOf(cbuList), List.copyOf(categoryIdList), dateRange, kind, onlyUncategorised,
-                minMoney, maxMoney, paymentMethod, descriptionQuery, cursorPage);
+                minMoney, maxMoney, paymentMethod, description, cursorPage);
 
         PageResult<Transaction> pageResult = listTransactionsFiltered.execute(command);
         Set<Cbu> ownedCbus = ownershipGateway.ownedAccounts(uId);
