@@ -102,7 +102,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         Optional<Long> unassignedOpt = Optional.empty();
         if (filter.onlyUncategorised()) {
             unassignedOpt = systemCategoryResolver.findUnassignedCategoryId();
-            if (unassignedOpt.isEmpty()) {
+            if (unassignedOpt.isEmpty() && filter.categoryIds().isEmpty()) {
                 return new PageResult<>(List.of(), false, null, 0L);
             }
         }
