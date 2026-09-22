@@ -91,7 +91,14 @@ class AccountTransactionContractTest {
             "categoryIds,5",
             "paymentMethod,CREDIT_CARD",
             "q,super",
-            "page,1"
+            "page,1",
+            "cursor,MjAyNi0wNi0wMXwx",
+            "size,10",
+            "categoryId,5",
+            "kind,EXPENSE",
+            "onlyUncategorised,true",
+            "amountMin,10.00",
+            "amountMax,500.00"
     })
     void anyFilterParameterLeavesTheLegacyAccountBranch(String param, String value) throws Exception {
         when(listTransactionsFiltered.execute(any()))
