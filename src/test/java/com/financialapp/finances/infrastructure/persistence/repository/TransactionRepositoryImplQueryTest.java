@@ -13,6 +13,7 @@ import com.financialapp.finances.infrastructure.persistence.mapper.TransactionPe
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.springframework.data.domain.Limit;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -146,6 +147,15 @@ class TransactionRepositoryImplQueryTest {
 
         assertThat(sql.getValue()).contains("LOWER(t.description) LIKE LOWER(:descriptionQuery) ESCAPE '\\'");
         assertThat(params.getValue().getValue("descriptionQuery")).isEqualTo("%50\\%%");
+    }
+
+    @Test
+    void searchByDescriptionPassesAnEscapedContainsPattern() {
+        when(jpa.searchByDescription(anyLong(), anyString(), any(Limit.class))).thenReturn(List.of());
+
+        repo.searchByDescription(new UserId(42L), "50%", 10);
+
+        verify(jpa).searchByDescription(eq(42L), eq("%50\\%%"), eq(Limit.of(10)));
     }
 
     @Test
