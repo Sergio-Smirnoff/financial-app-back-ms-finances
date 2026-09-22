@@ -1,6 +1,7 @@
 package com.financialapp.finances.web.controller;
 import com.financialapp.commons.core.domain.model.Cbu;
 
+import com.financialapp.commons.core.domain.model.PageResult;
 import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.transaction.Transaction;
@@ -20,6 +21,8 @@ import com.financialapp.finances.domain.model.category.CategoryNames;
 import com.financialapp.finances.domain.usecase.transaction.AccountTransactionView;
 import com.financialapp.finances.web.mapper.TransactionWebMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -31,8 +34,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Currency;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -77,5 +83,29 @@ class AccountTransactionContractTest {
                 .andExpect(jsonPath("$.data[0].category").value("Housing"))
                 .andExpect(jsonPath("$.data[0].subcategory").value("Rent"))
                 .andExpect(jsonPath("$.data[0].date").value("2026-06-01"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "accountCbus,0001112223334445556667",
+            "categoryIds,5",
+            "paymentMethod,CREDIT_CARD",
+            "q,super",
+            "page,1"
+    })
+    void anyFilterParameterLeavesTheLegacyAccountBranch(String param, String value) throws Exception {
+        when(listTransactionsFiltered.execute(any()))
+                .thenReturn(new PageResult<>(List.of(), false, null, 0L));
+        when(ownershipGateway.ownedAccounts(new UserId(42L))).thenReturn(Set.of());
+
+        mvc.perform(get("/api/v1/finances/transactions")
+                        .header("X-User-Id", 42L)
+                        .param("accountCbu", "0001112223334445556667")
+                        .param(param, value))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.totalElements").value(0));
+
+        verify(listAccountTransactions, never()).execute(any(), any(), any(), any());
     }
 }
