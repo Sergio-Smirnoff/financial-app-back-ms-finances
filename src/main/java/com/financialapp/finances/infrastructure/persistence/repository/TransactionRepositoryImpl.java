@@ -23,6 +23,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
@@ -93,29 +94,30 @@ public class TransactionRepositoryImpl implements TransactionRepository {
 
         StringBuilder whereSql = new StringBuilder(" WHERE t.user_id = :userId");
 
-        if (filter.accountCbu() != null) {
-            whereSql.append(" AND (t.from_cbu = :accountCbu OR t.to_cbu = :accountCbu)");
-            params.addValue("accountCbu", filter.accountCbu().cbuNumber());
+        if (!filter.accountCbus().isEmpty()) {
+            whereSql.append(" AND (t.from_cbu IN (:accountCbus) OR t.to_cbu IN (:accountCbus))");
+            params.addValue("accountCbus", filter.accountCbus().stream().map(Cbu::cbuNumber).toList());
         }
 
-        if (filter.categoryId() != null) {
-            whereSql.append(" AND t.category_id = :categoryId");
-            params.addValue("categoryId", filter.categoryId().value());
+        Optional<Long> unassignedOpt = Optional.empty();
+        if (filter.onlyUncategorised()) {
+            unassignedOpt = systemCategoryResolver.findUnassignedCategoryId();
+            if (unassignedOpt.isEmpty() && filter.categoryIds().isEmpty()) {
+                return new PageResult<>(List.of(), false, null, 0L);
+            }
+        }
+
+        List<Long> categoryIdValues = new ArrayList<>(filter.categoryIds().stream().map(CategoryId::value).toList());
+        unassignedOpt.ifPresent(categoryIdValues::add);
+        if (!categoryIdValues.isEmpty()) {
+            whereSql.append(" AND t.category_id IN (:categoryIds)");
+            params.addValue("categoryIds", List.copyOf(categoryIdValues));
         }
 
         if (filter.dateRange() != null) {
             whereSql.append(" AND t.date >= :fromDate AND t.date <= :toDate");
             params.addValue("fromDate", filter.dateRange().from());
             params.addValue("toDate", filter.dateRange().to());
-        }
-
-        if (filter.onlyUncategorised()) {
-            Optional<Long> unassignedOpt = systemCategoryResolver.findUnassignedCategoryId();
-            if (unassignedOpt.isEmpty()) {
-                return new PageResult<>(List.of(), false, null, 0L);
-            }
-            whereSql.append(" AND t.category_id = :unassignedId");
-            params.addValue("unassignedId", unassignedOpt.get());
         }
 
         if (filter.amountMin() != null) {
@@ -126,6 +128,16 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         if (filter.amountMax() != null) {
             whereSql.append(" AND t.amount <= :amountMax");
             params.addValue("amountMax", filter.amountMax().amount());
+        }
+
+        if (filter.paymentMethod() != null) {
+            whereSql.append(" AND COALESCE(t.payment_method, 'OTHER') = :paymentMethod");
+            params.addValue("paymentMethod", filter.paymentMethod().name());
+        }
+
+        if (filter.descriptionQuery() != null) {
+            whereSql.append(" AND LOWER(t.description) LIKE LOWER(:descriptionQuery) ESCAPE '\\'");
+            params.addValue("descriptionQuery", filter.descriptionQuery().containsPattern());
         }
 
         if (filter.kind() != null) {
@@ -164,8 +176,14 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         int pageSize = page.size();
         params.addValue("pageSize", pageSize + 1);
 
+        String offsetSql = "";
+        if (page.offset() != null && page.offset() > 0) {
+            offsetSql = " OFFSET :rowOffset";
+            params.addValue("rowOffset", page.offset());
+        }
+
         String selectSql = "SELECT t.id, t.user_id, t.from_cbu, t.to_cbu, t.amount, t.currency, t.category_id, t.description, t.date, t.payment_method, t.note " +
-                "FROM finances.transactions t" + whereSql + " ORDER BY t.date DESC, t.id DESC LIMIT :pageSize";
+                "FROM finances.transactions t" + whereSql + " ORDER BY t.date DESC, t.id DESC LIMIT :pageSize" + offsetSql;
 
         List<Transaction> rows = jdbcTemplate.query(selectSql, params, (rs, rowNum) -> {
             String pmStr = rs.getString("payment_method");
@@ -212,7 +230,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     @Override
     public List<Transaction> searchByDescription(UserId userId, String query, int limit) {
         Limit lim = limit <= 0 ? Limit.of(10) : Limit.of(limit);
-        return jpa.searchByDescription(userId.value(), query, lim)
+        return jpa.searchByDescription(userId.value(), new DescriptionQuery(query).containsPattern(), lim)
                 .stream().map(mapper::toDomain).toList();
     }
 

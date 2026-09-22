@@ -6,16 +6,28 @@ import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.Money;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.transaction.CursorPage;
+import com.financialapp.finances.domain.model.transaction.DescriptionQuery;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
+
+import com.financialapp.finances.domain.model.transaction.PaymentMethod;
+
+import java.util.List;
 
 public record TransactionFilterCommand(
         UserId userId,
-        Cbu accountCbu,
-        CategoryId categoryId,
+        List<Cbu> accountCbus,
+        List<CategoryId> categoryIds,
         DateRange dateRange,
         TransactionKind kind,
         boolean onlyUncategorised,
         Money amountMin,
         Money amountMax,
-        CursorPage page
-) { }
+        PaymentMethod paymentMethod,
+        DescriptionQuery descriptionQuery,
+        CursorPage page) {
+
+    public TransactionFilterCommand {
+        accountCbus = accountCbus != null ? List.copyOf(accountCbus) : List.of();
+        categoryIds = categoryIds != null ? List.copyOf(categoryIds) : List.of();
+    }
+}

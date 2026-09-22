@@ -7,17 +7,31 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Base64;
 
-public record CursorPage(String cursorAfter, int size) {
+public record CursorPage(String cursorAfter, int size, Integer offset) {
 
     private static final int DEFAULT_SIZE = 50;
     private static final int MAX_SIZE = 200;
 
     public CursorPage {
-        if (size <= 0) {
-            size = DEFAULT_SIZE;
-        } else if (size > MAX_SIZE) {
-            size = MAX_SIZE;
+        if (size <= 0) size = DEFAULT_SIZE;
+        if (size > MAX_SIZE) size = MAX_SIZE;
+        if (cursorAfter != null && !cursorAfter.isBlank()) {
+            offset = null;
+        } else if (offset != null) {
+            offset = Math.max(offset, 0);
         }
+    }
+
+    public CursorPage(String cursorAfter, int size) {
+        this(cursorAfter, size, null);
+    }
+
+    public static CursorPage ofPage(String cursorAfter, int size, Integer pageNumber) {
+        if (pageNumber == null) {
+            return new CursorPage(cursorAfter, size);
+        }
+        CursorPage window = new CursorPage(cursorAfter, size);
+        return new CursorPage(cursorAfter, window.size(), Math.max(pageNumber, 0) * window.size());
     }
 
     public static String encode(LocalDate date, Long id) {

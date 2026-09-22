@@ -48,4 +48,27 @@ class CursorPageTest {
         CursorPage pageBadFormat = new CursorPage("MjAyNi0wNy0xNQ", 50); // missing pipe and id
         assertThatThrownBy(pageBadFormat::decodedDate).isInstanceOf(InvalidIdentifierException.class);
     }
+
+    @Test
+    void theOffsetComponentIsARowOffsetAndSurvivesReconstruction() {
+        CursorPage page = CursorPage.ofPage(null, 20, 2);
+        assertThat(page.offset()).isEqualTo(40);
+
+        CursorPage rebuilt = new CursorPage(page.cursorAfter(), page.size(), page.offset());
+        assertThat(rebuilt.offset()).isEqualTo(40);
+    }
+
+    @Test
+    void negativePagesAndOffsetsClampToZero() {
+        assertThat(CursorPage.ofPage(null, 20, 0).offset()).isZero();
+        assertThat(CursorPage.ofPage(null, 20, -3).offset()).isZero();
+        assertThat(new CursorPage(null, 20, -7).offset()).isZero();
+        assertThat(new CursorPage(null, 20).offset()).isNull();
+    }
+
+    @Test
+    void aCursorWinsOverAPageNumber() {
+        CursorPage page = CursorPage.ofPage(CursorPage.encode(LocalDate.of(2026, 6, 1), 7L), 20, 3);
+        assertThat(page.offset()).isNull();
+    }
 }

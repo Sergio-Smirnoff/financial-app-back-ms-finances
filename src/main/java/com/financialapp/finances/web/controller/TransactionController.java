@@ -88,6 +88,10 @@ public class TransactionController {
     public ResponseEntity<ApiResponse<?>> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(value = "accountCbu", required = false) String accountCbu,
+            @RequestParam(value = "accountCbus", required = false) List<String> accountCbus,
+            @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
+            @RequestParam(value = "paymentMethod", required = false) String paymentMethodStr,
+            @RequestParam(value = "q", required = false) String descriptionQueryParam,
             @RequestParam(value = "limit", required = false) Integer limit,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -97,10 +101,15 @@ public class TransactionController {
             @RequestParam(value = "amountMin", required = false) String amountMinStr,
             @RequestParam(value = "amountMax", required = false) String amountMaxStr,
             @RequestParam(value = "cursor", required = false) String cursor,
+            @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false) Integer size) {
 
         // Legacy ms-banks account-scoped callback (no user context, specific accountCbu and no paging/filter params)
-        if (accountCbu != null && cursor == null && size == null && categoryId == null && kindStr == null && !onlyUncategorised && amountMinStr == null && amountMaxStr == null) {
+        if (accountCbu != null && cursor == null && size == null && categoryId == null && kindStr == null
+                && !onlyUncategorised && amountMinStr == null && amountMaxStr == null
+                && accountCbus == null && categoryIds == null
+                && paymentMethodStr == null && descriptionQueryParam == null
+                && page == null) {
             Cbu cbu = new Cbu(accountCbu);
             List<AccountTransactionResponse> rows = listAccountTransactions.execute(cbu, limit, from, to)
                     .stream().map(v -> mapper.toAccountResponse(v, cbu)).toList();
@@ -112,17 +121,29 @@ public class TransactionController {
         }
 
         UserId uId = new UserId(userId);
-        Cbu cbuParam = accountCbu != null && !accountCbu.isBlank() ? new Cbu(accountCbu) : null;
-        CategoryId catIdParam = categoryId != null ? new CategoryId(categoryId) : null;
+        List<Cbu> cbuList = new ArrayList<>();
+        if (accountCbu != null && !accountCbu.isBlank()) cbuList.add(new Cbu(accountCbu));
+        if (accountCbus != null) accountCbus.stream().filter(c -> c != null && !c.isBlank()).map(Cbu::new).forEach(cbuList::add);
+
+        List<CategoryId> categoryIdList = new ArrayList<>();
+        if (categoryId != null) categoryIdList.add(new CategoryId(categoryId));
+        if (categoryIds != null) categoryIds.stream().filter(Objects::nonNull).map(CategoryId::new).forEach(categoryIdList::add);
+
+        PaymentMethod paymentMethod = parseEnumParam(PaymentMethod.class, "paymentMethod", paymentMethodStr);
+
         DateRange dateRange = (from != null && to != null) ? new DateRange(from, to) : null;
-        TransactionKind kind = kindStr != null && !kindStr.isBlank() ? TransactionKind.valueOf(kindStr) : null;
+        TransactionKind kind = parseEnumParam(TransactionKind.class, "kind", kindStr);
         Money minMoney = amountMinStr != null ? new Money(new BigDecimal(amountMinStr), Currency.getInstance("ARS")) : null;
         Money maxMoney = amountMaxStr != null ? new Money(new BigDecimal(amountMaxStr), Currency.getInstance("ARS")) : null;
         int pageSize = size != null ? size : (limit != null ? limit : 50);
+        DescriptionQuery description = descriptionQueryParam != null && !descriptionQueryParam.isBlank()
+                ? new DescriptionQuery(descriptionQueryParam)
+                : null;
 
-        CursorPage cursorPage = new CursorPage(cursor, pageSize);
+        CursorPage cursorPage = CursorPage.ofPage(cursor, pageSize, page);
         TransactionFilterCommand command = new TransactionFilterCommand(
-                uId, cbuParam, catIdParam, dateRange, kind, onlyUncategorised, minMoney, maxMoney, cursorPage);
+                uId, List.copyOf(cbuList), List.copyOf(categoryIdList), dateRange, kind, onlyUncategorised,
+                minMoney, maxMoney, paymentMethod, description, cursorPage);
 
         PageResult<Transaction> pageResult = listTransactionsFiltered.execute(command);
         Set<Cbu> ownedCbus = ownershipGateway.ownedAccounts(uId);
@@ -211,5 +232,14 @@ public class TransactionController {
     private TransactionResponse toUser(Transaction saved, UserId userId) {
         TransactionKind kind = classifier.classify(saved, ownershipGateway.ownedAccounts(userId));
         return mapper.toUserResponse(new ClassifiedTransaction(saved, kind), null);
+    }
+
+    private static <E extends Enum<E>> E parseEnumParam(Class<E> type, String name, String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Enum.valueOf(type, value);
+        } catch (IllegalArgumentException e) {
+            throw new ConstraintViolationException(name + " is not a valid value: " + value, Set.of());
+        }
     }
 }

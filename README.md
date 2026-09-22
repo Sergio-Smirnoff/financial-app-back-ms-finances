@@ -186,7 +186,7 @@ User identity arrives via the `X-User-Id` header injected by the gateway.
 | POST | `/` | `X-User-Id` + `RecordTransactionRequest` | `ApiResponse<TransactionResponse>` 201 |
 | PUT | `/{id}` | `X-User-Id` + `UpdateTransactionRequest` | `ApiResponse<TransactionResponse>` |
 | DELETE | `/{id}` | `X-User-Id` | `ApiResponse<Void>` 200 |
-| GET | `/` | `X-User-Id` **or** `?accountCbu=` | with cursor/paging/filters -> `ApiResponse<PageResultResponse<TransactionResponse>>`; with `accountCbu` -> `ApiResponse<List<AccountTransactionResponse>>` |
+| GET | `/` | `X-User-Id` **or** `?accountCbu=` | with cursor/paging/filters (`?categoryIds=&accountCbus=&paymentMethod=&q=&onlyUncategorised=&page=&size=&cursor=`; singular `categoryId=`/`accountCbu=` also accepted, folded into the lists; `onlyUncategorised` is unioned with `categoryIds`, not intersected — if the Unassigned category cannot be resolved it adds nothing, so `categoryIds` alone still filter and `onlyUncategorised` alone returns an empty page; `q` is a literal, case-insensitive substring match — `%`, `_`, `\` match literally; `page` honoured only when `cursor` is absent; an unrecognised `paymentMethod` or `kind` returns 400) -> `ApiResponse<PageResultResponse<TransactionResponse>>`; with `accountCbu` -> `ApiResponse<List<AccountTransactionResponse>>` |
 | GET | `/{id}` | `X-User-Id` | `ApiResponse<TransactionResponse>` (includes paymentMethod, note) |
 | GET | `/uncategorised/count` | `X-User-Id` | `ApiResponse<UncategorisedCountResponse>` |
 | GET | `/summary` | `X-User-Id` + optional `?from=&to=` (ISO date) | `ApiResponse<Map<String, CurrencySummaryResponse>>` |
@@ -280,7 +280,7 @@ Copy `.env.example` (workspace root) to `.env` in this directory and fill in the
 
 ## Flyway migrations
 
-Current head: **V25**. Never modify existing migration files; always add a new versioned file.
+Current head: **V26**. Never modify existing migration files; always add a new versioned file.
 
 | Version | Description |
 |---|---|
@@ -309,6 +309,7 @@ Current head: **V25**. Never modify existing migration files; always add a new v
 | V23 | create categorization rules |
 | V24 | add payment method and note to transactions |
 | V25 | add transaction cursor index |
+| V26 | add fx snapshot to transactions |
 
 ---
 

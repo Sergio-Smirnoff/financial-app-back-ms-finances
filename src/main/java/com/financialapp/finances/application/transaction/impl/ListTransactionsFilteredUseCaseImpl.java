@@ -32,14 +32,15 @@ public class ListTransactionsFilteredUseCaseImpl implements ListTransactionsFilt
         TransactionFilter filter = new TransactionFilter(
                 command.userId(),
                 ownedCbus,
-                command.accountCbu(),
-                command.categoryId(),
+                command.accountCbus(),
+                command.categoryIds(),
                 command.dateRange(),
                 command.kind(),
                 command.onlyUncategorised(),
                 command.amountMin(),
-                command.amountMax()
-        );
+                command.amountMax(),
+                command.paymentMethod(),
+                command.descriptionQuery());
 
         return transactionRepository.findFiltered(filter, command.page());
     }
