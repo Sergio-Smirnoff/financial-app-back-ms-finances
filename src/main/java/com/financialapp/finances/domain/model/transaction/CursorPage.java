@@ -18,12 +18,20 @@ public record CursorPage(String cursorAfter, int size, Integer offset) {
         if (cursorAfter != null && !cursorAfter.isBlank()) {
             offset = null;
         } else if (offset != null) {
-            offset = Math.max(offset, 0) * size;
+            offset = Math.max(offset, 0);
         }
     }
 
     public CursorPage(String cursorAfter, int size) {
         this(cursorAfter, size, null);
+    }
+
+    public static CursorPage ofPage(String cursorAfter, int size, Integer pageNumber) {
+        if (pageNumber == null) {
+            return new CursorPage(cursorAfter, size);
+        }
+        CursorPage window = new CursorPage(cursorAfter, size);
+        return new CursorPage(cursorAfter, window.size(), Math.max(pageNumber, 0) * window.size());
     }
 
     public static String encode(LocalDate date, Long id) {

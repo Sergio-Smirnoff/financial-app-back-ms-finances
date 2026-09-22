@@ -117,7 +117,7 @@ class TransactionRepositoryImplQueryTest {
         TransactionFilter filter = new TransactionFilter(
                 new UserId(42L), Set.of(), List.of(), List.of(), null, null, false, null, null, null, null);
 
-        repo.findFiltered(filter, new CursorPage(null, 20, 2));
+        repo.findFiltered(filter, CursorPage.ofPage(null, 20, 2));
 
         ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<MapSqlParameterSource> params = ArgumentCaptor.forClass(MapSqlParameterSource.class);

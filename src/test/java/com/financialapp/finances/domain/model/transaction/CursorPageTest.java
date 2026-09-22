@@ -50,16 +50,25 @@ class CursorPageTest {
     }
 
     @Test
-    void offsetIsDerivedFromThePageNumberAndClampedAtZero() {
-        assertThat(new CursorPage(null, 20, 2).offset()).isEqualTo(40);
-        assertThat(new CursorPage(null, 20, 0).offset()).isZero();
-        assertThat(new CursorPage(null, 20, -3).offset()).isZero();
+    void theOffsetComponentIsARowOffsetAndSurvivesReconstruction() {
+        CursorPage page = CursorPage.ofPage(null, 20, 2);
+        assertThat(page.offset()).isEqualTo(40);
+
+        CursorPage rebuilt = new CursorPage(page.cursorAfter(), page.size(), page.offset());
+        assertThat(rebuilt.offset()).isEqualTo(40);
+    }
+
+    @Test
+    void negativePagesAndOffsetsClampToZero() {
+        assertThat(CursorPage.ofPage(null, 20, 0).offset()).isZero();
+        assertThat(CursorPage.ofPage(null, 20, -3).offset()).isZero();
+        assertThat(new CursorPage(null, 20, -7).offset()).isZero();
         assertThat(new CursorPage(null, 20).offset()).isNull();
     }
 
     @Test
     void aCursorWinsOverAPageNumber() {
-        CursorPage page = new CursorPage(CursorPage.encode(LocalDate.of(2026, 6, 1), 7L), 20, 3);
+        CursorPage page = CursorPage.ofPage(CursorPage.encode(LocalDate.of(2026, 6, 1), 7L), 20, 3);
         assertThat(page.offset()).isNull();
     }
 }

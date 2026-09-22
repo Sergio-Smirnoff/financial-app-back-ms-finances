@@ -140,7 +140,7 @@ public class TransactionController {
                 ? new DescriptionQuery(descriptionQueryParam)
                 : null;
 
-        CursorPage cursorPage = new CursorPage(cursor, pageSize, page);
+        CursorPage cursorPage = CursorPage.ofPage(cursor, pageSize, page);
         TransactionFilterCommand command = new TransactionFilterCommand(
                 uId, List.copyOf(cbuList), List.copyOf(categoryIdList), dateRange, kind, onlyUncategorised,
                 minMoney, maxMoney, paymentMethod, description, cursorPage);
