@@ -129,10 +129,10 @@ public class TransactionController {
         if (categoryId != null) categoryIdList.add(new CategoryId(categoryId));
         if (categoryIds != null) categoryIds.stream().filter(Objects::nonNull).map(CategoryId::new).forEach(categoryIdList::add);
 
-        PaymentMethod paymentMethod = parsePaymentMethod(paymentMethodStr);
+        PaymentMethod paymentMethod = parseEnumParam(PaymentMethod.class, "paymentMethod", paymentMethodStr);
 
         DateRange dateRange = (from != null && to != null) ? new DateRange(from, to) : null;
-        TransactionKind kind = kindStr != null && !kindStr.isBlank() ? TransactionKind.valueOf(kindStr) : null;
+        TransactionKind kind = parseEnumParam(TransactionKind.class, "kind", kindStr);
         Money minMoney = amountMinStr != null ? new Money(new BigDecimal(amountMinStr), Currency.getInstance("ARS")) : null;
         Money maxMoney = amountMaxStr != null ? new Money(new BigDecimal(amountMaxStr), Currency.getInstance("ARS")) : null;
         int pageSize = size != null ? size : (limit != null ? limit : 50);
@@ -234,12 +234,12 @@ public class TransactionController {
         return mapper.toUserResponse(new ClassifiedTransaction(saved, kind), null);
     }
 
-    private static PaymentMethod parsePaymentMethod(String value) {
+    private static <E extends Enum<E>> E parseEnumParam(Class<E> type, String name, String value) {
         if (value == null || value.isBlank()) return null;
         try {
-            return PaymentMethod.valueOf(value);
+            return Enum.valueOf(type, value);
         } catch (IllegalArgumentException e) {
-            return null;
+            throw new ConstraintViolationException(name + " is not a valid value: " + value, Set.of());
         }
     }
 }
