@@ -91,7 +91,7 @@ public class TransactionController {
             @RequestParam(value = "accountCbus", required = false) List<String> accountCbus,
             @RequestParam(value = "categoryIds", required = false) List<Long> categoryIds,
             @RequestParam(value = "paymentMethod", required = false) String paymentMethodStr,
-            @RequestParam(value = "q", required = false) String descriptionQuery,
+            @RequestParam(value = "q", required = false) String descriptionQueryParam,
             @RequestParam(value = "limit", required = false) Integer limit,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -108,7 +108,7 @@ public class TransactionController {
         if (accountCbu != null && cursor == null && size == null && categoryId == null && kindStr == null
                 && !onlyUncategorised && amountMinStr == null && amountMaxStr == null
                 && accountCbus == null && categoryIds == null
-                && paymentMethodStr == null && descriptionQuery == null
+                && paymentMethodStr == null && descriptionQueryParam == null
                 && page == null) {
             Cbu cbu = new Cbu(accountCbu);
             List<AccountTransactionResponse> rows = listAccountTransactions.execute(cbu, limit, from, to)
@@ -129,18 +129,21 @@ public class TransactionController {
         if (categoryId != null) categoryIdList.add(new CategoryId(categoryId));
         if (categoryIds != null) categoryIds.stream().filter(Objects::nonNull).map(CategoryId::new).forEach(categoryIdList::add);
 
-        PaymentMethod paymentMethod = parsePaymentMethod(paymentMethodStr);
+        PaymentMethod paymentMethod = parseEnumParam(PaymentMethod.class, "paymentMethod", paymentMethodStr);
 
         DateRange dateRange = (from != null && to != null) ? new DateRange(from, to) : null;
-        TransactionKind kind = kindStr != null && !kindStr.isBlank() ? TransactionKind.valueOf(kindStr) : null;
+        TransactionKind kind = parseEnumParam(TransactionKind.class, "kind", kindStr);
         Money minMoney = amountMinStr != null ? new Money(new BigDecimal(amountMinStr), Currency.getInstance("ARS")) : null;
         Money maxMoney = amountMaxStr != null ? new Money(new BigDecimal(amountMaxStr), Currency.getInstance("ARS")) : null;
         int pageSize = size != null ? size : (limit != null ? limit : 50);
+        DescriptionQuery description = descriptionQueryParam != null && !descriptionQueryParam.isBlank()
+                ? new DescriptionQuery(descriptionQueryParam)
+                : null;
 
-        CursorPage cursorPage = new CursorPage(cursor, pageSize, page);
+        CursorPage cursorPage = CursorPage.ofPage(cursor, pageSize, page);
         TransactionFilterCommand command = new TransactionFilterCommand(
                 uId, List.copyOf(cbuList), List.copyOf(categoryIdList), dateRange, kind, onlyUncategorised,
-                minMoney, maxMoney, paymentMethod, descriptionQuery, cursorPage);
+                minMoney, maxMoney, paymentMethod, description, cursorPage);
 
         PageResult<Transaction> pageResult = listTransactionsFiltered.execute(command);
         Set<Cbu> ownedCbus = ownershipGateway.ownedAccounts(uId);
@@ -231,12 +234,12 @@ public class TransactionController {
         return mapper.toUserResponse(new ClassifiedTransaction(saved, kind), null);
     }
 
-    private static PaymentMethod parsePaymentMethod(String value) {
+    private static <E extends Enum<E>> E parseEnumParam(Class<E> type, String name, String value) {
         if (value == null || value.isBlank()) return null;
         try {
-            return PaymentMethod.valueOf(value);
+            return Enum.valueOf(type, value);
         } catch (IllegalArgumentException e) {
-            return null;
+            throw new ConstraintViolationException(name + " is not a valid value: " + value, Set.of());
         }
     }
 }

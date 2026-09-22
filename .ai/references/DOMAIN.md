@@ -22,6 +22,8 @@ Service-local only — `Money`, `Cbu`, `UserId` are documented once at the paren
 | `DateRange` | `from` and `to` LocalDate pair | `from <= to` invariant enforced in constructor |
 | `TransactionId` | Long aggregate ID | Wraps non-null positive ID |
 | `CategoryId` | Long category ID | Wraps non-null positive ID |
+| `DescriptionQuery` | `q` search text | Trimmed, non-blank; `containsPattern()` escapes `\`, `%` and `_` (backslash first) and wraps the result in `%…%`, bound with `ESCAPE '\\'` so the literal wildcards can never widen the match |
+| `CursorPage` | Page window — `cursorAfter`, `size`, `offset` | Carries a cursor **or** a row offset, never both — the canonical constructor nulls `offset` whenever `cursorAfter` is present. `size` clamps to `[1, 200]`, default `50`. Built through `CursorPage.ofPage(cursorAfter, size, pageNumber)`, the opt-in offset mode: `pageNumber * size` becomes `offset`, honoured only when `cursorAfter` is absent |
 
 ## Enumerations
 

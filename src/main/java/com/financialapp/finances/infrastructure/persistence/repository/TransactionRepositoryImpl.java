@@ -23,6 +23,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
@@ -98,24 +99,25 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             params.addValue("accountCbus", filter.accountCbus().stream().map(Cbu::cbuNumber).toList());
         }
 
-        if (!filter.categoryIds().isEmpty()) {
+        Optional<Long> unassignedOpt = Optional.empty();
+        if (filter.onlyUncategorised()) {
+            unassignedOpt = systemCategoryResolver.findUnassignedCategoryId();
+            if (unassignedOpt.isEmpty() && filter.categoryIds().isEmpty()) {
+                return new PageResult<>(List.of(), false, null, 0L);
+            }
+        }
+
+        List<Long> categoryIdValues = new ArrayList<>(filter.categoryIds().stream().map(CategoryId::value).toList());
+        unassignedOpt.ifPresent(categoryIdValues::add);
+        if (!categoryIdValues.isEmpty()) {
             whereSql.append(" AND t.category_id IN (:categoryIds)");
-            params.addValue("categoryIds", filter.categoryIds().stream().map(CategoryId::value).toList());
+            params.addValue("categoryIds", List.copyOf(categoryIdValues));
         }
 
         if (filter.dateRange() != null) {
             whereSql.append(" AND t.date >= :fromDate AND t.date <= :toDate");
             params.addValue("fromDate", filter.dateRange().from());
             params.addValue("toDate", filter.dateRange().to());
-        }
-
-        if (filter.onlyUncategorised()) {
-            Optional<Long> unassignedOpt = systemCategoryResolver.findUnassignedCategoryId();
-            if (unassignedOpt.isEmpty()) {
-                return new PageResult<>(List.of(), false, null, 0L);
-            }
-            whereSql.append(" AND t.category_id = :unassignedId");
-            params.addValue("unassignedId", unassignedOpt.get());
         }
 
         if (filter.amountMin() != null) {
@@ -134,8 +136,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         }
 
         if (filter.descriptionQuery() != null) {
-            whereSql.append(" AND LOWER(t.description) LIKE LOWER(:descriptionQuery)");
-            params.addValue("descriptionQuery", "%" + filter.descriptionQuery() + "%");
+            whereSql.append(" AND LOWER(t.description) LIKE LOWER(:descriptionQuery) ESCAPE '\\'");
+            params.addValue("descriptionQuery", filter.descriptionQuery().containsPattern());
         }
 
         if (filter.kind() != null) {
@@ -228,7 +230,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     @Override
     public List<Transaction> searchByDescription(UserId userId, String query, int limit) {
         Limit lim = limit <= 0 ? Limit.of(10) : Limit.of(limit);
-        return jpa.searchByDescription(userId.value(), query, lim)
+        return jpa.searchByDescription(userId.value(), new DescriptionQuery(query).containsPattern(), lim)
                 .stream().map(mapper::toDomain).toList();
     }
 

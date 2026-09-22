@@ -6,14 +6,19 @@ import com.financialapp.finances.domain.common.model.*;
 import com.financialapp.finances.domain.gateway.AccountOwnershipGateway;
 import com.financialapp.finances.domain.model.category.CategoryNames;
 import com.financialapp.finances.domain.usecase.transaction.AccountTransactionView;
+import com.financialapp.finances.domain.model.transaction.DescriptionQuery;
+import com.financialapp.finances.domain.model.transaction.MonthlyFlow;
+import com.financialapp.finances.domain.model.transaction.PaymentMethod;
 import com.financialapp.finances.domain.model.transaction.Transaction;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
 import com.financialapp.finances.domain.model.transaction.TransactionSummary;
 import com.financialapp.finances.domain.repository.CategoryRepository;
 import com.financialapp.finances.domain.service.TransactionClassifier;
 import com.financialapp.finances.domain.usecase.transaction.*;
+import com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand;
 import com.financialapp.finances.web.mapper.TransactionWebMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,13 +28,16 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -115,30 +123,28 @@ class TransactionControllerTest {
                         .param("size", "10"))
                 .andExpect(status().isOk());
 
-        org.mockito.ArgumentCaptor<com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand> command =
-                org.mockito.ArgumentCaptor.forClass(com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand.class);
-        org.mockito.Mockito.verify(listTransactionsFiltered).execute(command.capture());
-        org.assertj.core.api.Assertions.assertThat(command.getValue().categoryIds()).containsExactly(new CategoryId(5L), new CategoryId(9L));
-        org.assertj.core.api.Assertions.assertThat(command.getValue().accountCbus()).containsExactly(new Cbu("0001112223334445556667"));
-        org.assertj.core.api.Assertions.assertThat(command.getValue().paymentMethod()).isEqualTo(com.financialapp.finances.domain.model.transaction.PaymentMethod.CREDIT_CARD);
-        org.assertj.core.api.Assertions.assertThat(command.getValue().descriptionQuery()).isEqualTo("super");
+        ArgumentCaptor<TransactionFilterCommand> command = ArgumentCaptor.forClass(TransactionFilterCommand.class);
+        verify(listTransactionsFiltered).execute(command.capture());
+        assertThat(command.getValue().categoryIds()).containsExactly(new CategoryId(5L), new CategoryId(9L));
+        assertThat(command.getValue().accountCbus()).containsExactly(new Cbu("0001112223334445556667"));
+        assertThat(command.getValue().paymentMethod()).isEqualTo(PaymentMethod.CREDIT_CARD);
+        assertThat(command.getValue().descriptionQuery()).isEqualTo(new DescriptionQuery("super"));
     }
 
     @Test
-    void listIgnoresAnUnknownPaymentMethodInsteadOfFailing() throws Exception {
-        when(listTransactionsFiltered.execute(any()))
-                .thenReturn(new PageResult<>(List.of(), false, null, 0L));
-        when(ownershipGateway.ownedAccounts(new UserId(42L))).thenReturn(Set.of());
-
+    void listRejectsAnUnknownPaymentMethod() throws Exception {
         mvc.perform(get("/api/v1/finances/transactions")
                         .header("X-User-Id", 42L)
                         .param("paymentMethod", "NOT_A_METHOD"))
-                .andExpect(status().isOk());
+                .andExpect(status().isBadRequest());
+    }
 
-        org.mockito.ArgumentCaptor<com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand> command =
-                org.mockito.ArgumentCaptor.forClass(com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand.class);
-        org.mockito.Mockito.verify(listTransactionsFiltered).execute(command.capture());
-        org.assertj.core.api.Assertions.assertThat(command.getValue().paymentMethod()).isNull();
+    @Test
+    void listRejectsAnUnknownKind() throws Exception {
+        mvc.perform(get("/api/v1/finances/transactions")
+                        .header("X-User-Id", 42L)
+                        .param("kind", "NOT_A_KIND"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -153,10 +159,9 @@ class TransactionControllerTest {
                         .param("size", "20"))
                 .andExpect(status().isOk());
 
-        org.mockito.ArgumentCaptor<com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand> command =
-                org.mockito.ArgumentCaptor.forClass(com.financialapp.finances.domain.usecase.transaction.command.TransactionFilterCommand.class);
-        org.mockito.Mockito.verify(listTransactionsFiltered).execute(command.capture());
-        org.assertj.core.api.Assertions.assertThat(command.getValue().page().offset()).isEqualTo(40);
+        ArgumentCaptor<TransactionFilterCommand> command = ArgumentCaptor.forClass(TransactionFilterCommand.class);
+        verify(listTransactionsFiltered).execute(command.capture());
+        assertThat(command.getValue().page().offset()).isEqualTo(40);
     }
 
     @Test
@@ -216,9 +221,8 @@ class TransactionControllerTest {
 
     @Test
     void monthlySummaryReturnsFlowSeries() throws Exception {
-        com.financialapp.finances.domain.model.transaction.MonthlyFlow flow =
-                new com.financialapp.finances.domain.model.transaction.MonthlyFlow(
-                        java.time.YearMonth.of(2026, 7), ARS, new BigDecimal("150000.00"), new BigDecimal("85000.00"));
+        MonthlyFlow flow = new MonthlyFlow(
+                YearMonth.of(2026, 7), ARS, new BigDecimal("150000.00"), new BigDecimal("85000.00"));
 
         when(getMonthlyFlow.execute(eq(new UserId(7L)), any(DateRange.class)))
                 .thenReturn(List.of(flow));

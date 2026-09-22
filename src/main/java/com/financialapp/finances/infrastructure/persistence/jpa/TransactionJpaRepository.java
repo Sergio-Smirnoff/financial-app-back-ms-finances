@@ -55,10 +55,10 @@ public interface TransactionJpaRepository extends JpaRepository<TransactionJpaEn
     @Query("""
             SELECT t FROM TransactionJpaEntity t
             WHERE t.userId = :userId
-              AND LOWER(t.description) LIKE LOWER(CONCAT('%', :query, '%'))
+              AND LOWER(t.description) LIKE LOWER(:pattern) ESCAPE '\\'
             ORDER BY t.date DESC, t.id DESC
             """)
     List<TransactionJpaEntity> searchByDescription(@Param("userId") Long userId,
-                                                   @Param("query") String query,
+                                                   @Param("pattern") String pattern,
                                                    Limit limit);
 }

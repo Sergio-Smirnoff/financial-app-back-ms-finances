@@ -6,6 +6,7 @@ import com.financialapp.commons.core.domain.model.Cbu;
 import com.financialapp.finances.domain.common.model.Money;
 import com.financialapp.finances.domain.common.model.UserId;
 import com.financialapp.finances.domain.model.transaction.CursorPage;
+import com.financialapp.finances.domain.model.transaction.DescriptionQuery;
 import com.financialapp.finances.domain.model.transaction.TransactionKind;
 
 import com.financialapp.finances.domain.model.transaction.PaymentMethod;
@@ -22,7 +23,7 @@ public record TransactionFilterCommand(
         Money amountMin,
         Money amountMax,
         PaymentMethod paymentMethod,
-        String descriptionQuery,
+        DescriptionQuery descriptionQuery,
         CursorPage page) {
 
     public TransactionFilterCommand {
